@@ -48,43 +48,24 @@ Create Dockerfiles for:
 
 ---
 
-### **BE-3 — docker-compose Orchestration**
+### **BE-3 — Compose + Proxy + Persistence + PostGIS**
 
 Add:
 
 * proxy (Caddy)
-* db (PostGIS)
-* all services wired together
+* db (PostGIS) with extension enabled
+* all services wired together via docker-compose
+* reverse proxy routing
+* shared `/data` volume
 
 **Done when**
 
-* `docker compose up` runs everything
-* Frontend accessible in browser
-
----
-
-### **BE-4 — Reverse Proxy Routing**
-
-Configure:
-
-* `/` → frontend
-* `/api/*` → api
-* `/assets/*` → `/data`
-
-**Done when**
-
-* API reachable via browser
-* Static file serving works
-
----
-
-### **BE-5 — Persistent Volume (/data)**
-
-Add shared volume
-
-**Done when**
-
+* `docker compose up` runs everything (proxy, frontend, API, DB)
+* Frontend accessible at `/`
+* API reachable at `/api/*`
+* Static file serving works at `/assets/*` from `/data`
 * File written by API persists after restart
+* PostGIS extension enabled and ready
 
 ---
 
@@ -94,10 +75,7 @@ Add shared volume
 
 ### **BE-6 — Postgres + PostGIS Ready**
 
-**Done when**
-
-* DB container running
-* PostGIS extension enabled
+Folded into **BE-3**.
 
 ---
 
@@ -409,7 +387,7 @@ Implement local storage abstraction
 
 If you want to move fast, do ONLY this subset first:
 
-1 → 3 → 6 → 7 → 8 → 9 → 10 → 13 → 14 → 15 → 16 → 17
+1 → 3 → 7 → 8 → 9 → 10 → 13 → 14 → 15 → 16 → 17
 
 That gives you:
 

@@ -3,7 +3,7 @@
 ## Why monorepo?
 
 * Shared types (events, map config)
-* Easier local dev (`docker compose up`)
+* Easier local dev (`docker compose -f infrastructure/docker/docker-compose.yml up`)
 * Simpler deployment (one repo → one VPS)
 * Clean coordination between API, worker, and storage layer
 
@@ -352,7 +352,7 @@ StorageService → S3-compatible backend
 ## Start everything
 
 ```bash
-docker compose up
+docker compose -f infrastructure/docker/docker-compose.yml up
 ```
 
 ---

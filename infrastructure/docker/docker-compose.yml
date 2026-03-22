@@ -1,0 +1,52 @@
+services:
+  proxy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - frontend
+      - api
+    ports:
+      - "80:80"
+    volumes:
+      - data:/data
+      - ../../infrastructure/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../infrastructure/docker/Dockerfiles/frontend.Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+    expose:
+      - "3000"
+
+  api:
+    build:
+      context: ../../api
+      dockerfile: ../infrastructure/docker/Dockerfiles/api.Dockerfile
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATA_DIR: /data
+    expose:
+      - "4000"
+    volumes:
+      - data:/data
+
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: bookearth
+      POSTGRES_USER: bookearth
+      POSTGRES_PASSWORD: bookearth
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ../../infrastructure/initdb:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  data:
+  db_data:
