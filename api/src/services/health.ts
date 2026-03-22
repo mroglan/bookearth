@@ -1,4 +1,4 @@
-import { checkDatabaseConnection } from '../repositories/health';
+import { checkDatabaseConnection } from '../repositories';
 
 export async function getHealthStatus(): Promise<{ status: 'ok'; db: 'ok' }> {
   await checkDatabaseConnection();

@@ -1,5 +1,5 @@
 import { query } from '../db';
-import { EventRow } from '../types/events';
+import { EventRow } from '../types';
 
 export async function fetchEventsByBook(params: {
   bookId: string;

@@ -1,5 +1,5 @@
-import { fetchMapCompositionByBook } from '../repositories/books';
-import { MapComposition } from '../types/books';
+import { fetchMapCompositionByBook } from '../repositories';
+import { MapComposition } from '../types';
 
 export async function getMapCompositionByBook(bookId: string): Promise<MapComposition | null> {
   return fetchMapCompositionByBook(bookId);

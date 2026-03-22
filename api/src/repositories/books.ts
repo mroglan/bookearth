@@ -1,5 +1,5 @@
 import { query } from '../db';
-import { MapComposition, MapCompositionRow } from '../types/books';
+import { MapComposition, MapCompositionRow } from '../types';
 
 export async function fetchMapCompositionByBook(bookId: string): Promise<MapComposition | null> {
   const result = await query<MapCompositionRow>(
