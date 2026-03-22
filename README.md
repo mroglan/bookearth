@@ -56,6 +56,34 @@ docker build -f infrastructure/docker/Dockerfiles/api.Dockerfile -t bookearth-ap
 docker run --rm -p 4000:4000 bookearth-api
 ```
 
+## Docker Compose (Full Stack)
+
+Compose file lives at `infrastructure/docker/docker-compose.yml`.
+
+### Build and run
+
+```bash
+docker compose -f infrastructure/docker/docker-compose.yml up --build
+```
+
+### Run without rebuild
+
+```bash
+docker compose -f infrastructure/docker/docker-compose.yml up
+```
+
+### Stop
+
+```bash
+docker compose -f infrastructure/docker/docker-compose.yml down
+```
+
+### Reset data volumes (destructive)
+
+```bash
+docker compose -f infrastructure/docker/docker-compose.yml down -v
+```
+
 ## Notes
 
 Design references live in `planning/opening-design/`.
