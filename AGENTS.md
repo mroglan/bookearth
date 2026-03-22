@@ -12,7 +12,7 @@ The MVP centers on a 3D globe frontend and a lightweight API that serves book ev
 
 # Running Locally
 
-- Node.js 24 is the expected runtime for this repo.
+- Node.js 24 is the expected runtime for this repo. If you are not on node 24 (i.e. check `node --version`), then run `nvm use` to switch to the correct version
 - Frontend: `cd frontend && npm install && npm run dev` (defaults to port 3000)
 - API: `cd api && npm install && npm run dev` (defaults to port 4000, `/health` endpoint)
 
