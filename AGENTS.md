@@ -15,6 +15,9 @@ The MVP centers on a 3D globe frontend and a lightweight API that serves book ev
 - Node.js 24 is the expected runtime for this repo. If you are not on node 24 (i.e. check `node --version`), then run `nvm use` to switch to the correct version
 - Frontend: `cd frontend && npm install && npm run dev` (defaults to port 3000)
 - API: `cd api && npm install && npm run dev` (defaults to port 4000, `/health` endpoint)
+- API + DB testing:
+- You may need escalated permissions to `curl` `http://localhost:4000/*` from the sandbox.
+- To rebuild the database after changing `infrastructure/initdb/*.sql`, bring volumes down and back up (for example: `cd infrastructure/docker && docker compose down -v && docker compose up`).
 
 # Tickets
 
