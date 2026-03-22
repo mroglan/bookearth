@@ -3,7 +3,7 @@
 ## Why monorepo?
 
 * Shared types (events, map config)
-* Easier local dev (`docker compose -f infrastructure/docker/docker-compose.yml up`)
+* Easier local dev (`docker compose -f infrastructure/prod/docker-compose.yml up`)
 * Simpler deployment (one repo → one VPS)
 * Clean coordination between API, worker, and storage layer
 
@@ -25,10 +25,13 @@ literary-map-explorer/
 │   └── utils/           # Shared utilities
 │
 ├── infrastructure/      # Deployment + infra config
-│   ├── docker/
+│   ├── prod/
 │   │   ├── docker-compose.yml
-│   │   └── Dockerfiles/
-│   ├── proxy/           # Caddy / NGINX config
+│   │   ├── initdb/      # Postgres init scripts
+│   │   └── proxy/       # Caddy / NGINX config
+│   ├── test/
+│   │   ├── docker-compose.yml
+│   │   └── initdb/      # Test Postgres init scripts
 │   └── scripts/         # deploy, backup, etc.
 │
 ├── data/                # Local filesystem storage (mounted volume)
@@ -196,15 +199,21 @@ export type MapComposition = {
 
 ---
 
-## `infrastructure/docker/`
+## `infrastructure/prod/`
 
 ```text
-docker/
 ├── docker-compose.yml
-└── Dockerfiles/
-    ├── frontend.Dockerfile
-    ├── api.Dockerfile
-    └── worker.Dockerfile
+├── initdb/
+└── proxy/
+```
+
+---
+
+## `infrastructure/test/`
+
+```text
+test/
+└── docker-compose.yml
 ```
 
 ---
@@ -231,7 +240,7 @@ volumes:
 
 ---
 
-## `infrastructure/proxy/`
+## `infrastructure/prod/proxy/`
 
 ```text
 proxy/
@@ -352,7 +361,7 @@ StorageService → S3-compatible backend
 ## Start everything
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml up
+docker compose -f infrastructure/prod/docker-compose.yml up
 ```
 
 ---

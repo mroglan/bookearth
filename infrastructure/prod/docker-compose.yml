@@ -8,12 +8,12 @@ services:
       - "80:80"
     volumes:
       - data:/data
-      - ../../infrastructure/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./proxy/Caddyfile:/etc/caddy/Caddyfile:ro
 
   frontend:
     build:
       context: ../../frontend
-      dockerfile: ../infrastructure/docker/Dockerfiles/frontend.Dockerfile
+      dockerfile: Dockerfile
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -23,7 +23,7 @@ services:
   api:
     build:
       context: ../../api
-      dockerfile: ../infrastructure/docker/Dockerfiles/api.Dockerfile
+      dockerfile: Dockerfile
     depends_on:
       - db
     environment:
@@ -45,7 +45,7 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ../../infrastructure/initdb:/docker-entrypoint-initdb.d:ro
+      - ./initdb:/docker-entrypoint-initdb.d:ro
 
 volumes:
   data:

@@ -34,12 +34,12 @@ Runs at `http://localhost:4000`. Health check at `http://localhost:4000/health`.
 
 ## Docker Builds
 
-Dockerfiles live in `infrastructure/docker/Dockerfiles/`.
+Dockerfiles live in `frontend/` and `api/`.
 
 ### Frontend
 
 ```bash
-docker build -f infrastructure/docker/Dockerfiles/frontend.Dockerfile -t bookearth-frontend ./frontend
+docker build -f frontend/Dockerfile -t bookearth-frontend ./frontend
 ```
 
 ```bash
@@ -49,7 +49,7 @@ docker run --rm -p 3000:3000 bookearth-frontend
 ### API
 
 ```bash
-docker build -f infrastructure/docker/Dockerfiles/api.Dockerfile -t bookearth-api ./api
+docker build -f api/Dockerfile -t bookearth-api ./api
 ```
 
 ```bash
@@ -58,30 +58,36 @@ docker run --rm -p 4000:4000 bookearth-api
 
 ## Docker Compose (Full Stack)
 
-Compose file lives at `infrastructure/docker/docker-compose.yml`.
+Compose file lives at `infrastructure/prod/docker-compose.yml`.
 
 ### Build and run
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml up --build
+docker compose -f infrastructure/prod/docker-compose.yml up --build
 ```
 
 ### Run without rebuild
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml up
+docker compose -f infrastructure/prod/docker-compose.yml up
 ```
 
 ### Stop
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml down
+docker compose -f infrastructure/prod/docker-compose.yml down
 ```
 
 ### Reset data volumes (destructive)
 
 ```bash
-docker compose -f infrastructure/docker/docker-compose.yml down -v
+docker compose -f infrastructure/prod/docker-compose.yml down -v
+```
+
+## Tests
+
+```bash
+./run-test-suite.sh
 ```
 
 ## Notes

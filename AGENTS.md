@@ -17,7 +17,7 @@ The MVP centers on a 3D globe frontend and a lightweight API that serves book ev
 - API: `cd api && npm install && npm run dev` (defaults to port 4000, `/health` endpoint)
 - API + DB testing:
 - You may need escalated permissions to `curl` `http://localhost:4000/*` from the sandbox.
-- To rebuild the database after changing `infrastructure/initdb/*.sql`, bring volumes down and back up (for example: `cd infrastructure/docker && docker compose down -v && docker compose up`).
+- To rebuild the database after changing `infrastructure/prod/initdb/*.sql`, bring volumes down and back up (for example: `cd infrastructure/prod && docker compose down -v && docker compose up`).
 
 # Tickets
 
