@@ -5,6 +5,7 @@
 * Shared types (events, map config)
 * Easier local dev (`docker compose up`)
 * Simpler deployment (one repo → one VPS)
+* Clean coordination between API, worker, and storage layer
 
 ---
 
@@ -14,26 +15,28 @@
 literary-map-explorer/
 │
 ├── apps/                # User-facing services
-│   ├── frontend/       # Next.js (React + Cesium)
-│   ├── api/            # Node API (REST/GraphQL)
-│   └── worker/         # Python AI pipeline
+│   ├── frontend/        # Next.js (React + Cesium)
+│   ├── api/             # Node API (REST/GraphQL)
+│   └── worker/          # Python AI pipeline
 │
-├── packages/           # Shared code
-│   ├── types/          # Shared TypeScript types
-│   ├── config/         # Shared configs (ESLint, TS, etc.)
-│   └── utils/          # Shared utilities
+├── packages/            # Shared code
+│   ├── types/           # Shared TypeScript types
+│   ├── config/          # Shared configs (ESLint, TS, etc.)
+│   └── utils/           # Shared utilities
 │
-├── infrastructure/     # Deployment + infra config
+├── infrastructure/      # Deployment + infra config
 │   ├── docker/
 │   │   ├── docker-compose.yml
 │   │   └── Dockerfiles/
-│   ├── proxy/          # Caddy / NGINX config
-│   └── scripts/        # deploy, backup, etc.
+│   ├── proxy/           # Caddy / NGINX config
+│   └── scripts/         # deploy, backup, etc.
 │
-├── data/               # (optional) local dev data
+├── data/                # Local filesystem storage (mounted volume)
+│   ├── maps/            # Raster tiles
+│   └── illustrations/   # Generated images
 │
 ├── .env
-├── package.json        # root workspace config
+├── package.json         # root workspace config
 └── README.md
 ```
 
@@ -79,7 +82,11 @@ api/
 │   ├── services/
 │   │   ├── eventService.ts
 │   │   ├── mapService.ts
-│   │   └── storageService.ts
+│   │   └── storage/
+│   │       ├── index.ts              # interface + factory
+│   │       ├── storageService.ts     # interface definition
+│   │       ├── localStorage.ts       # filesystem implementation
+│   │       └── s3Storage.ts          # future implementation
 │   │
 │   ├── db/
 │   │   ├── client.ts
@@ -110,9 +117,9 @@ worker/
 │   ├── services/
 │   │   ├── llm_client.py
 │   │   ├── geocoder.py
-│   │   └── storage.py
+│   │   └── storage.py        # mirrors API storage abstraction
 │   │
-│   ├── models/        # pydantic schemas
+│   ├── models/               # pydantic schemas
 │   └── main.py
 │
 ├── requirements.txt
@@ -202,6 +209,28 @@ docker/
 
 ---
 
+## Key Update: Shared Data Volume
+
+```yaml
+services:
+  api:
+    volumes:
+      - data:/data
+
+  worker:
+    volumes:
+      - data:/data
+
+  proxy:
+    volumes:
+      - data:/data
+
+volumes:
+  data:
+```
+
+---
+
 ## `infrastructure/proxy/`
 
 ```text
@@ -217,6 +246,11 @@ proxy/
 yourdomain.com {
   reverse_proxy /api/* api:4000
   reverse_proxy /* frontend:3000
+
+  handle /assets/* {
+    root * /data
+    file_server
+  }
 }
 ```
 
@@ -228,6 +262,7 @@ yourdomain.com {
 scripts/
 ├── deploy.sh
 ├── backup-db.sh
+├── backup-data.sh      # NEW: backs up /data
 └── seed-data.sh
 ```
 
@@ -283,20 +318,29 @@ GET /api/books/:id/events
 
 ---
 
-## API → MinIO
+## API → Storage (filesystem via abstraction)
 
 ```ts
-getImageUrl(eventId)
+storage.getPublicUrl("illustrations/event_123.png")
 ```
 
 ---
 
-## Worker → DB + MinIO
+## Worker → DB + Storage
 
 ```text
 Book → Events → DB
-Images → MinIO
+Images → /data/illustrations
+Tiles → /data/maps
 Map config → DB
+```
+
+---
+
+## 🔁 Future (No Code Changes)
+
+```text
+StorageService → S3-compatible backend
 ```
 
 ---
@@ -317,7 +361,15 @@ docker compose up
 
 * Frontend: `localhost:3000`
 * API: `localhost:4000`
-* MinIO: `localhost:9000`
+* Assets: `localhost/assets/...`
+
+---
+
+## Local Data
+
+```text
+/data → persisted via Docker volume
+```
 
 ---
 
@@ -328,7 +380,8 @@ docker compose up
 ## Today (Single VPS)
 
 * Everything runs together
-* Simple deploy
+* Files stored locally
+* Minimal infra complexity
 
 ---
 
@@ -339,7 +392,7 @@ You can split:
 * `api` → separate service
 * `worker` → async cluster
 * `frontend` → CDN
-* `minio` → S3
+* filesystem → S3 (SeaweedFS, Garage, R2, S3)
 
 ---
 
@@ -358,14 +411,21 @@ You can split:
 
 ---
 
-## 2. Keep worker independent
+## 2. Storage abstraction is non-negotiable
+
+* Never access `/data` directly outside storage layer
+* Guarantees painless migration later
+
+---
+
+## 3. Keep worker independent
 
 * No coupling to API
 * Only DB + storage
 
 ---
 
-## 3. Version your pipeline outputs
+## 4. Version your pipeline outputs
 
 ```json
 {
@@ -376,11 +436,22 @@ You can split:
 
 ---
 
+## 5. Treat `/data` like an external system
+
+Even though it’s local:
+
+* Back it up
+* Don’t assume durability
+* Don’t tightly couple paths
+
+---
+
 # 🧠 Final Take
 
-This repo structure gives you:
+This repo structure now gives you:
 
+* **Maximum simplicity today** (filesystem, single VPS)
+* **Zero lock-in tomorrow** (S3-compatible abstraction ready)
 * Clean separation of concerns
-* Easy local + VPS deployment
-* Shared types across system
-* Seamless path to scale
+* Strong alignment between API, worker, and storage
+* A frictionless path to scale without rewrites
