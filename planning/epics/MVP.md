@@ -91,6 +91,8 @@ Tables:
 * Tables exist
 * GIST index on `geom`
 
+Folded into **BE-4**.
+
 ---
 
 ### **BE-8 — Seed Initial Data**
@@ -103,6 +105,8 @@ Insert:
 **Done when**
 
 * Query returns meaningful data
+
+Folded into **BE-4**.
 
 ---
 
