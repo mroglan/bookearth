@@ -3,10 +3,12 @@ import { config } from './config';
 import { storage } from './storage';
 import { checkDbConnection } from './db';
 import { routes } from './routes';
+import { errorHandler } from './middleware/error-handler';
 
 const app = express();
 app.use(express.json());
 app.use(routes);
+app.use(errorHandler);
 
 async function waitForDb(attempts = 10, delayMs = 1000): Promise<void> {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {

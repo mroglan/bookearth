@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getEventsByBook } from '../services/events';
 import { getMapCompositionByBook } from '../services/books';
+import { ApiError } from '../errors';
 
 function parseBbox(value: unknown): [number, number, number, number] | null {
   if (typeof value !== 'string') {
@@ -40,43 +41,28 @@ export async function handleBookEvents(req: Request, res: Response): Promise<voi
   const bbox = parseBbox(req.query.bbox);
   const zoomLevel = parseZoomLevel(req.query.zoomLevel);
   if (!bbox || zoomLevel === null) {
-    res.status(400).json({
-      error: 'bbox and zoomLevel are required',
-      expected: 'bbox=minLon,minLat,maxLon,maxLat&zoomLevel=number'
-    });
-    return;
+    throw new ApiError('bbox and zoomLevel are required', 400);
   }
 
   const bookId = parseBookId(req.params.id);
   if (!bookId) {
-    res.status(400).json({ error: 'book id is required' });
-    return;
+    throw new ApiError('book id is required', 400);
   }
 
-  try {
-    const events = await getEventsByBook({ bookId, bbox, zoomLevel });
-    res.status(200).json({ events });
-  } catch (error) {
-    res.status(500).json({ error: 'failed to fetch events' });
-  }
+  const events = await getEventsByBook({ bookId, bbox, zoomLevel });
+  res.status(200).json({ events });
 }
 
 export async function handleBookMapComposition(req: Request, res: Response): Promise<void> {
   const bookId = parseBookId(req.params.id);
   if (!bookId) {
-    res.status(400).json({ error: 'book id is required' });
-    return;
+    throw new ApiError('book id is required', 400);
   }
 
-  try {
-    const composition = await getMapCompositionByBook(bookId);
-    if (!composition) {
-      res.status(404).json({ error: 'book not found' });
-      return;
-    }
-
-    res.status(200).json(composition);
-  } catch (error) {
-    res.status(500).json({ error: 'failed to fetch map composition' });
+  const composition = await getMapCompositionByBook(bookId);
+  if (!composition) {
+    throw new ApiError('book not found', 404);
   }
+
+  res.status(200).json(composition);
 }
