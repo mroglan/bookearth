@@ -114,6 +114,8 @@ Folded into **BE-4**.
 
 ---
 
+API backlog items **BE-9** through **BE-12** are consolidated into **BE-5**.
+
 ### **BE-9 — API Server Boot**
 
 Set up Express/Fastify
@@ -137,6 +139,12 @@ GET /api/books/:id/events
 * Returns ≤ 200 events
 * Uses PostGIS filtering
 
+**Follow-up note**
+
+* `zoomLevel` filtering is temporary; we likely need a more adaptive LOD algorithm
+  that accounts for event density, importance, and spatial scatter per viewport.
+  Captured as **BE-19**.
+
 ---
 
 ### **BE-11 — Map Composition Endpoint**
@@ -159,6 +167,8 @@ Implement local storage abstraction
 
 * Can write + read files from `/data`
 * Returns `/assets/...` URLs
+
+Folded into **BE-5**.
 
 ---
 

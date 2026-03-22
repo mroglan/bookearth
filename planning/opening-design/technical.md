@@ -239,6 +239,11 @@ WHERE
 LIMIT 200;
 ```
 
+Note: `zoom_level` is a temporary MVP filter. We will likely need a more adaptive
+level-of-detail algorithm that factors in event density, importance, and spatial
+scatter at the current viewport. Capture that as a follow-up ticket before
+shipping beyond MVP.
+
 ---
 
 # 6. 🗺️ Map System (Layer-Based, Hybrid Ready)
