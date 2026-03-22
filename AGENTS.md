@@ -18,4 +18,6 @@ The MVP centers on a 3D globe frontend and a lightweight API that serves book ev
 
 # Tickets
 
-You should always know the ticket you're working on (e.g. BE-123). If you don't know, ask the human. Your ticket can be found in `planning/tickets/[ticket]`.
+You should always know the ticket you're working on (e.g. BE-123). If you don't know, ask the human. Your ticket can be found in `planning/tickets/[ticket]`. You should do all your work in the git branch with the same ticket name.
+
+Each ticket is part of an epic found in `planning/epics/`.
