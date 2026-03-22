@@ -42,10 +42,18 @@ Dockerfiles live in `infrastructure/docker/Dockerfiles/`.
 docker build -f infrastructure/docker/Dockerfiles/frontend.Dockerfile -t bookearth-frontend ./frontend
 ```
 
+```bash
+docker run --rm -p 3000:3000 bookearth-frontend
+```
+
 ### API
 
 ```bash
 docker build -f infrastructure/docker/Dockerfiles/api.Dockerfile -t bookearth-api ./api
+```
+
+```bash
+docker run --rm -p 4000:4000 bookearth-api
 ```
 
 ## Notes
