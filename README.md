@@ -10,6 +10,8 @@ Book Earth is a literary map explorer. The MVP focuses on a 3D globe, an API tha
 
 ## Local Development
 
+Node.js 24 is the expected runtime for this repo.
+
 ### Frontend
 
 ```bash
