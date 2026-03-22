@@ -30,7 +30,8 @@ Set up repo with:
 **Done when**
 
 * All apps start locally (even if “hello world”)
-* Basic README explains how to run
+* Basic README gives a basic overview of the project for humans, and explains how to run.
+* AGENTS.md is updated to provide good general context of the project for future AIs.
 
 ---
 
