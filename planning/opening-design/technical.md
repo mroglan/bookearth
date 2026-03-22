@@ -20,10 +20,10 @@
                               │
         ┌─────────────────────┼─────────────────────┐
         ▼                     ▼                     ▼
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│  Frontend    │     │     API      │     │   MinIO      │
-│ Next.js      │     │ Node (TS)    │     │ (S3 storage) │
-└──────────────┘     └──────┬───────┘     └──────────────┘
+┌──────────────┐     ┌──────────────┐     ┌──────────────────┐
+│  Frontend    │     │     API      │     │   Local Storage   │
+│ Next.js      │     │ Node (TS)    │     │   (/data volume)  │
+└──────────────┘     └──────┬───────┘     └──────────────────┘
                             │
                             ▼
                     ┌──────────────┐
@@ -50,7 +50,6 @@
 | `frontend` | React + Cesium UI     |
 | `api`      | Data + business logic |
 | `db`       | Postgres + PostGIS    |
-| `minio`    | Object storage        |
 | `worker`   | AI processing         |
 
 ---
@@ -67,15 +66,24 @@ services:
 
   api:
     build: ./api
+    volumes:
+      - data:/data
 
   db:
     image: postgis/postgis
 
-  minio:
-    image: minio/minio
-
   worker:
     build: ./worker
+    volumes:
+      - data:/data
+
+  # Optional future replacement for filesystem:
+  # seaweedfs:
+  #   image: chrislusf/seaweedfs
+  #   command: "server -dir=/data -s3"
+
+volumes:
+  data:
 ```
 
 ---
@@ -152,7 +160,7 @@ GET /api/books/:id/events?bbox=...&zoomLevel=...
 * Serve events
 * Serve map composition
 * Handle filtering
-* Interface with DB + MinIO
+* Interface with DB + StorageService
 
 ---
 
@@ -170,7 +178,7 @@ GET /api/events/:id
 
 * `EventService`
 * `MapService`
-* `StorageService` (MinIO)
+* `StorageService` (filesystem-backed, S3-compatible interface)
 
 ---
 
@@ -260,7 +268,7 @@ type MapComposition = {
 ### Phase 1 (MVP — Raster)
 
 * Base: Cesium terrain
-* Overlays: raster tiles (MinIO)
+* Overlays: raster tiles (filesystem-served)
 * Styling: shaders
 
 ---
@@ -277,24 +285,23 @@ type MapComposition = {
 
 ---
 
-# 7. 📦 Object Storage (MinIO)
+# 7. 📦 Object Storage (Filesystem with Future S3 Compatibility)
 
-## Why MinIO
+## Philosophy
 
-* S3-compatible
-* Runs locally
-* Easy migration to AWS later
+> Use the local filesystem now, but design as if using S3.
 
 ---
 
-## Buckets
+## Storage Layout
 
 ```text
-maps/
-  overlay_name/{z}/{x}/{y}.png
+/data
+  /maps
+    /overlay_name/{z}/{x}/{y}.png
 
-illustrations/
-  event_id.png
+  /illustrations
+    /event_id.png
 ```
 
 ---
@@ -303,6 +310,83 @@ illustrations/
 
 ```ts
 getPublicUrl("illustrations/event_123.png")
+→ /assets/illustrations/event_123.png
+```
+
+---
+
+## Reverse Proxy Serving
+
+### Caddy Example
+
+```caddy
+handle /assets/* {
+  root * /data
+  file_server
+}
+```
+
+---
+
+## Storage Abstraction (Critical)
+
+### Interface (stable, never changes)
+
+```ts
+interface StorageService {
+  getPublicUrl(path: string): string;
+
+  putObject(path: string, data: Buffer): Promise<void>;
+
+  getObject(path: string): Promise<Buffer>;
+
+  deleteObject(path: string): Promise<void>;
+}
+```
+
+---
+
+### Local Implementation (MVP)
+
+```ts
+class LocalStorageService implements StorageService {
+  basePath = "/data";
+
+  getPublicUrl(path: string) {
+    return `${process.env.ASSET_BASE_URL || ""}/assets/${path}`;
+  }
+
+  async putObject(path: string, data: Buffer) {
+    const fullPath = `${this.basePath}/${path}`;
+    await fs.promises.mkdir(dirname(fullPath), { recursive: true });
+    await fs.promises.writeFile(fullPath, data);
+  }
+
+  async getObject(path: string) {
+    return fs.promises.readFile(`${this.basePath}/${path}`);
+  }
+
+  async deleteObject(path: string) {
+    return fs.promises.unlink(`${this.basePath}/${path}`);
+  }
+}
+```
+
+---
+
+## Future Migration (No Rewrite Required)
+
+Swap implementation only:
+
+* SeaweedFS (S3 gateway)
+* Garage (S3-compatible)
+* AWS S3 / Cloudflare R2
+
+```ts
+const storage: StorageService =
+  process.env.STORAGE === "s3"
+    ? new S3StorageService()
+    : new LocalStorageService();
 ```
 
 ---
@@ -324,7 +408,8 @@ getPublicUrl("illustrations/event_123.png")
 3. Location resolution
 4. Hierarchy construction
 5. Map composition generation
-6. Illustration generation
+6. Illustration generation (saved to `/data/illustrations`)
+7. Tile generation (saved to `/data/maps`)
 
 ---
 
@@ -356,6 +441,7 @@ docker compose run worker process_book.py
 * HTTPS
 * Routing
 * Compression
+* Static asset serving
 
 ---
 
@@ -364,7 +450,7 @@ docker compose run worker process_book.py
 ```text
 /        → frontend
 /api/*   → api
-/assets/ → minio
+/assets/ → local filesystem (/data)
 ```
 
 ---
@@ -393,10 +479,18 @@ debounce(fetchEvents, 200ms)
 
 ---
 
-### 4. Future Additions
+### 4. Static Asset Efficiency
+
+* OS-level file caching
+* Proxy-level caching headers
+
+---
+
+### 5. Future Additions
 
 * Redis caching
 * CDN (Cloudflare)
+* Object storage (S3-compatible)
 
 ---
 
@@ -408,9 +502,10 @@ debounce(fetchEvents, 200ms)
 
 ---
 
-## MinIO
+## Filesystem (`/data`)
 
-* Snapshot or rsync
+* rsync to backup server
+* Snapshot (provider-level)
 
 ---
 
@@ -440,7 +535,11 @@ docker compose up -d --build
 
 ## Step 2
 
-* Move MinIO → S3
+* Replace filesystem with S3-compatible storage
+
+  * SeaweedFS
+  * Garage
+  * AWS S3 / R2
 
 ## Step 3
 
@@ -456,8 +555,9 @@ docker compose up -d --build
 
 Because:
 
+* Storage is abstracted
 * Services are containerized
-* Interfaces are clean
+* Interfaces are stable
 
 ---
 
@@ -492,6 +592,8 @@ Because:
 
 ## 3. Tile performance (no CDN yet)
 
+## 4. Single-node storage durability
+
 ---
 
 # 17. 🧠 Guiding Principles
@@ -499,5 +601,6 @@ Because:
 * Container-first design
 * Layer-based maps
 * Engine-agnostic configs
+* Storage abstraction from day one
 * Offline-heavy processing
 * Simple deployment
