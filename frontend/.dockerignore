@@ -1,0 +1,9 @@
+node_modules
+.next
+npm-debug.log
+.yarn
+.pnpm-store
+.DS_Store
+.git
+.env
+.env.*

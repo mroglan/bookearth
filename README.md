@@ -32,6 +32,30 @@ npm run dev
 
 Runs at `http://localhost:4000`. Health check at `http://localhost:4000/health`.
 
+## Docker Builds
+
+Dockerfiles live in `infrastructure/docker/Dockerfiles/`.
+
+### Frontend
+
+```bash
+docker build -f infrastructure/docker/Dockerfiles/frontend.Dockerfile -t bookearth-frontend ./frontend
+```
+
+```bash
+docker run --rm -p 3000:3000 bookearth-frontend
+```
+
+### API
+
+```bash
+docker build -f infrastructure/docker/Dockerfiles/api.Dockerfile -t bookearth-api ./api
+```
+
+```bash
+docker run --rm -p 4000:4000 bookearth-api
+```
+
 ## Notes
 
 Design references live in `planning/opening-design/`.
