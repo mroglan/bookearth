@@ -1,4 +1,4 @@
-# 🧭 **Literary Map Explorer — Technical Design**
+# 🧭 **Literary Map Explorer — Technical Design (VPS + Docker Edition)**
 
 ---
 
@@ -6,67 +6,109 @@
 
 ## Core Principle
 
-> Separate **content generation**, **data serving**, and **rendering** so each can evolve independently.
+> Design as a distributed system, deploy as a single node.
 
 ---
 
 ## High-Level Architecture
 
 ```text
-                ┌────────────────────────────┐
-                │        Frontend            │
-                │ React + Cesium (3D Globe) │
-                └────────────┬───────────────┘
-                             │
-                             ▼
-                ┌────────────────────────────┐
-                │        API Layer           │
-                │   (GraphQL / REST)        │
-                └────────────┬───────────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        ▼                    ▼                    ▼
-┌───────────────┐   ┌────────────────┐   ┌──────────────────┐
-│ PostGIS DB    │   │ Object Storage │   │ Cache (Redis)     │
-│ (events/maps) │   │ (images/tiles) │   │                  │
-└───────────────┘   └────────────────┘   └──────────────────┘
-
-        ▲
-        │
-┌──────────────────────────────────────────────┐
-│     Offline Processing Pipeline (AI)         │
-│  Text → Events → Locations → Map Config      │
-└──────────────────────────────────────────────┘
+                    ┌──────────────────────┐
+                    │     Reverse Proxy    │
+                    │   (Caddy / NGINX)   │
+                    └─────────┬────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        ▼                     ▼                     ▼
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Frontend    │     │     API      │     │   MinIO      │
+│ Next.js      │     │ Node (TS)    │     │ (S3 storage) │
+└──────────────┘     └──────┬───────┘     └──────────────┘
+                            │
+                            ▼
+                    ┌──────────────┐
+                    │  Postgres    │
+                    │  + PostGIS   │
+                    └──────────────┘
+                            ▲
+                            │
+                    ┌──────────────┐
+                    │   Worker     │
+                    │ (AI pipeline)│
+                    └──────────────┘
 ```
 
 ---
 
-# 2. 🌍 Frontend (3D Map Experience)
+# 2. 🐳 Deployment Architecture
+
+## Docker Services
+
+| Service    | Responsibility        |
+| ---------- | --------------------- |
+| `proxy`    | Routing + HTTPS       |
+| `frontend` | React + Cesium UI     |
+| `api`      | Data + business logic |
+| `db`       | Postgres + PostGIS    |
+| `minio`    | Object storage        |
+| `worker`   | AI processing         |
+
+---
+
+## docker-compose (Conceptual)
+
+```yaml
+services:
+  proxy:
+    image: caddy
+
+  frontend:
+    build: ./frontend
+
+  api:
+    build: ./api
+
+  db:
+    image: postgis/postgis
+
+  minio:
+    image: minio/minio
+
+  worker:
+    build: ./worker
+```
+
+---
+
+## Key Design Rule
+
+> Every service is independently deployable later.
+
+---
+
+# 3. 🌍 Frontend (3D Map System)
 
 ## Stack
 
-* **React (Next.js)**
-* **CesiumJS** (3D globe engine)
-* Zustand (state)
-* React Query (data fetching)
+* React (Next.js)
+* CesiumJS
+* Zustand
+* React Query
 
 ---
 
 ## Responsibilities
 
-* Render 3D Earth
-* Handle camera movement (zoom/tilt/pan)
-* Load events dynamically based on viewport
-* Apply map composition (layers)
-* Display event UI (modal / panel)
+* 3D Earth rendering
+* Camera control (zoom, tilt, pan)
+* Event visualization
+* Map composition rendering
 
 ---
 
-## Core Modules
+## Core Abstractions
 
-### 2.1 Map Engine Wrapper
-
-Abstract Cesium behind your own API:
+### Map Engine Interface
 
 ```ts
 interface MapEngine {
@@ -78,104 +120,61 @@ interface MapEngine {
 
 ---
 
-### 2.2 Zoom-Level System
+## Zoom-Based Rendering
+
+| Zoom     | Data    |
+| -------- | ------- |
+| Planet   | Arcs    |
+| Regional | Scenes  |
+| Local    | Moments |
+
+---
+
+## Data Fetching
 
 ```ts
-function getZoomLevel(height: number) {
-  if (height > 5_000_000) return "arc";
-  if (height > 500_000) return "scene";
-  return "moment";
-}
+GET /api/books/:id/events?bbox=...&zoomLevel=...
 ```
 
 ---
 
-### 2.3 Event Rendering Strategy
-
-* Use Cesium `Entity` or `Billboard`
-* Cluster server-side (not client-side initially)
-* Only render visible events
-
----
-
-### 2.4 Map Composition Rendering
-
-Apply layers:
-
-```ts
-composition = {
-  base: "terrain",
-  overlays: ["historical_borders"],
-  postProcessing: "sepia"
-}
-```
-
-Mapped to:
-
-* Cesium imagery layers
-* Shader adjustments
-
----
-
-# 3. 🧠 Backend API Layer
+# 4. 🧠 API Layer
 
 ## Stack
 
 * Node.js (TypeScript)
-* GraphQL (Apollo) or REST
-* Hosted on Fly.io / Railway
+* Express / Fastify
 
 ---
 
-## Core Endpoints
+## Responsibilities
 
-### 3.1 Map Configuration
+* Serve events
+* Serve map composition
+* Handle filtering
+* Interface with DB + MinIO
+
+---
+
+## Endpoints
 
 ```http
-GET /books/:id/map-composition
-```
-
-Returns:
-
-```json
-{
-  "base": "terrain",
-  "overlays": ["roman_empire"],
-  "postProcessing": "sepia"
-}
+GET /api/books/:id/map-composition
+GET /api/books/:id/events
+GET /api/events/:id
 ```
 
 ---
 
-### 3.2 Events Query (Spatial)
+## Internal Services
 
-```http
-GET /books/:id/events?bbox=...&zoomLevel=scene
-```
-
----
-
-### 3.3 Event Detail
-
-```http
-GET /events/:id
-```
+* `EventService`
+* `MapService`
+* `StorageService` (MinIO)
 
 ---
 
-## Query Behavior
-
-* Filter by bounding box
-* Filter by zoom level
-* Limit results (e.g., 200 max)
-
----
-
-# 4. 🗄️ Data Layer (PostGIS)
-
-## Database: PostgreSQL + PostGIS
-
----
+# 5. 🗄️ Database (Postgres + PostGIS)
 
 ## Schema
 
@@ -212,21 +211,15 @@ events (
 
 ---
 
-### Locations
+## Indexing
 
 ```sql
-locations (
-  id,
-  name,
-  lat,
-  lon,
-  confidence
-)
+CREATE INDEX idx_events_geom ON events USING GIST (geom);
 ```
 
 ---
 
-## Key Query
+## Query Pattern
 
 ```sql
 SELECT *
@@ -234,16 +227,13 @@ FROM events
 WHERE
   book_id = $1
   AND zoom_level = $2
-  AND ST_Intersects(
-    geom,
-    ST_MakeEnvelope($bbox)
-  )
+  AND ST_Intersects(geom, ST_MakeEnvelope(...))
 LIMIT 200;
 ```
 
 ---
 
-# 5. 🗺️ Map System (Hybrid Strategy)
+# 6. 🗺️ Map System (Layer-Based, Hybrid Ready)
 
 ## Core Abstraction: MapComposition
 
@@ -267,184 +257,135 @@ type MapComposition = {
 
 ## Rendering Strategy
 
-### Phase 1 (Option A — Raster)
+### Phase 1 (MVP — Raster)
 
-* Base: Cesium terrain / imagery
-* Overlays: raster tile layers (S3 or external)
+* Base: Cesium terrain
+* Overlays: raster tiles (MinIO)
 * Styling: shaders
 
 ---
 
 ### Phase 2 (Hybrid)
 
-* Some books → raster
-* Some books → vector tiles
+* Mix raster + vector
 
 ---
 
-### Phase 3 (Option B — Vector)
+### Phase 3 (Advanced)
 
-* Full feature-level styling
-* Mapbox-style rules
-
----
-
-## Key Design
-
-> MapComposition is **engine-agnostic**
+* Full vector styling
 
 ---
 
-# 6. 🧠 Offline Processing Pipeline (AI Core)
+# 7. 📦 Object Storage (MinIO)
+
+## Why MinIO
+
+* S3-compatible
+* Runs locally
+* Easy migration to AWS later
+
+---
+
+## Buckets
+
+```text
+maps/
+  overlay_name/{z}/{x}/{y}.png
+
+illustrations/
+  event_id.png
+```
+
+---
+
+## Access Pattern
+
+```ts
+getPublicUrl("illustrations/event_123.png")
+```
+
+---
+
+# 8. 🤖 Worker System (AI Pipeline)
 
 ## Stack
 
-* Python
+* Python (recommended)
 * LLM APIs
-* spaCy / transformers
-* Queue (Redis + Celery)
+* spaCy / NLP
 
 ---
 
-## Pipeline Stages
+## Responsibilities
 
-### 6.1 Text Ingestion
-
-* Input: full book text
-* Chunk into passages
-
----
-
-### 6.2 Event Extraction
-
-LLM prompt:
-
-* Extract:
-
-  * event description
-  * location mention
-  * importance
-  * visual potential
+1. Text ingestion
+2. Event extraction
+3. Location resolution
+4. Hierarchy construction
+5. Map composition generation
+6. Illustration generation
 
 ---
 
-### 6.3 Event Filtering
+## Execution Modes
 
-Score:
+### MVP
+
+```bash
+docker compose run worker process_book.py
+```
+
+---
+
+### Later
+
+* Add queue (Redis)
+* Async processing
+
+---
+
+# 9. 🌐 Reverse Proxy
+
+## Use: Caddy (recommended)
+
+---
+
+## Responsibilities
+
+* HTTPS
+* Routing
+* Compression
+
+---
+
+## Routing
 
 ```text
-importance + location clarity + visual richness
+/        → frontend
+/api/*   → api
+/assets/ → minio
 ```
 
 ---
 
-### 6.4 Location Resolution
+# 10. ⚡ Performance Strategy
 
-Pipeline:
+## Techniques
 
-```text
-NER → Geocoding → Coordinate
-```
+### 1. Spatial Queries
 
-Store:
-
-```json
-{
-  "lat": ...,
-  "lon": ...,
-  "confidence": "exact | approximate"
-}
-```
+* PostGIS + GIST index
 
 ---
 
-### 6.5 Hierarchy Construction
-
-* Cluster events by:
-
-  * geography
-  * narrative proximity
-
----
-
-### 6.6 Map Composition Generation
-
-LLM + rules:
-
-Input:
-
-```json
-{
-  "timePeriod": "1800s",
-  "setting": "Europe",
-  "themes": ["travel", "war"]
-}
-```
-
-Output:
-
-```json
-{
-  "base": "terrain",
-  "overlays": ["historical_borders"],
-  "postProcessing": "muted"
-}
-```
-
----
-
-### 6.7 Illustration Generation
-
-* Prompt per event
-* Apply book-level style
-* Store in S3
-
----
-
-# 7. 🧱 Storage & Assets
-
-## Object Storage (S3)
-
-Stores:
-
-* Event illustrations
-* Map overlay tiles
-* Static assets
-
----
-
-## Tile Storage Structure
-
-```text
-/maps/{overlay}/{z}/{x}/{y}.png
-```
-
----
-
-## CDN
-
-* CloudFront (or similar)
-* Cache tiles + images
-
----
-
-# 8. ⚡ Performance Strategy
-
-## Key Techniques
-
-### 8.1 Spatial Querying
-
-* PostGIS bounding box queries
-
----
-
-### 8.2 Event Limits
+### 2. Event Limiting
 
 * Max ~200 per request
 
 ---
 
-### 8.3 Debounced Camera Updates
+### 3. Debounced Requests
 
 ```ts
 debounce(fetchEvents, 200ms)
@@ -452,159 +393,111 @@ debounce(fetchEvents, 200ms)
 
 ---
 
-### 8.4 Caching
+### 4. Future Additions
 
-* Redis for:
-
-  * event queries
-  * map configs
+* Redis caching
+* CDN (Cloudflare)
 
 ---
 
-### 8.5 Progressive Loading
+# 11. 🔐 Backups
 
-* Load arcs first
-* Then scenes
-* Then moments
+## Database
 
----
-
-# 9. ☁️ Deployment Strategy
-
-## Environments
-
-* Dev
-* Staging
-* Production
+* Daily `pg_dump`
 
 ---
 
-## Infrastructure
+## MinIO
 
-### Frontend
-
-* Vercel (Next.js)
+* Snapshot or rsync
 
 ---
 
-### Backend
+# 12. 🚀 Deployment Flow
 
-* Fly.io / Railway (Node API)
+## Manual Deploy
 
----
-
-### Database
-
-* Supabase (Postgres + PostGIS)
-
----
-
-### Storage
-
-* AWS S3 + CloudFront
-
----
-
-### Queue / Workers
-
-* Redis (Upstash)
-* Python workers (Fly.io / ECS)
-
----
-
-## Deployment Flow
-
-```text
-Push → CI/CD → Deploy API + Frontend
+```bash
+ssh server
+git pull
+docker compose up -d --build
 ```
 
 ---
 
-## Processing Flow
+## CI/CD (optional)
 
-```text
-Upload Book
-   ↓
-Queue Job
-   ↓
-Worker processes:
-   - events
-   - locations
-   - map composition
-   ↓
-Store results
-```
+* GitHub Actions → SSH deploy
 
 ---
 
-# 10. 🔐 Access Patterns
+# 13. 📈 Scaling Path
 
-## Read-heavy system
+## Step 1
 
-* Optimize for:
+* Move DB → managed Postgres
 
-  * fast map loads
-  * fast spatial queries
+## Step 2
+
+* Move MinIO → S3
+
+## Step 3
+
+* Scale API horizontally
+
+## Step 4
+
+* Add CDN
 
 ---
 
-## Write patterns
+## No Rewrite Needed
 
-* Mostly offline (pipeline)
-* Rare updates
+Because:
+
+* Services are containerized
+* Interfaces are clean
 
 ---
 
-# 11. 🚀 MVP Scope
+# 14. 💸 Cost Structure
 
-## Include
+## VPS
+
+* $10–$20/month
+
+---
+
+## Everything else
+
+* $0 (self-hosted)
+
+---
+
+# 15. 🧪 MVP Scope
 
 * 1–3 books
-* ~100 events per book
-* 3 zoom levels
-* 1–2 overlays max
+* ~100 events each
 * Raster maps only
+* Manual pipeline execution
 
 ---
 
-## Exclude
+# 16. 🔥 Risks
 
-* Real-time editing
-* Multi-user features
-* Full vector styling
+## 1. Event extraction quality
 
----
+## 2. Location ambiguity
 
-# 12. 🔥 Key Risks
-
-## 1. Event Quality
-
-Bad extraction = bad product
-
-## 2. Location Ambiguity
-
-Books are vague → need heuristics
-
-## 3. Overengineering Maps
-
-Start simple (raster)
+## 3. Tile performance (no CDN yet)
 
 ---
 
-# 13. 🧠 Guiding Principles
+# 17. 🧠 Guiding Principles
 
-### 1. Layer-based map model
-
-Not monolithic styles
-
-### 2. Engine-agnostic configs
-
-Future-proofing
-
-### 3. Server-driven data
-
-Client stays thin
-
-### 4. Progressive complexity
-
-Start simple → evolve
+* Container-first design
+* Layer-based maps
+* Engine-agnostic configs
+* Offline-heavy processing
+* Simple deployment
