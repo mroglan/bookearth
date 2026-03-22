@@ -130,7 +130,7 @@ Set up Express/Fastify
 ### **BE-10 — Events Endpoint (Core MVP)**
 
 ```
-GET /api/books/:id/events
+GET /books/:id/events
 ```
 
 **Done when**
@@ -150,7 +150,7 @@ GET /api/books/:id/events
 ### **BE-11 — Map Composition Endpoint**
 
 ```
-GET /api/books/:id/map-composition
+GET /books/:id/map-composition
 ```
 
 **Done when**

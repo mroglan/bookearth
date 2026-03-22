@@ -13,7 +13,7 @@ describe('API endpoints', () => {
 
   it('returns events for a seeded book within bbox', async () => {
     const response = await request(app).get(
-      '/api/books/1/events?bbox=-123.2,37.6,-122.1,38.2&zoomLevel=6'
+      '/books/1/events?bbox=-123.2,37.6,-122.1,38.2&zoomLevel=6'
     );
 
     expect(response.status).toBe(200);
@@ -22,7 +22,7 @@ describe('API endpoints', () => {
   });
 
   it('returns map composition for a seeded book', async () => {
-    const response = await request(app).get('/api/books/1/map-composition');
+    const response = await request(app).get('/books/1/map-composition');
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('base');
   });
