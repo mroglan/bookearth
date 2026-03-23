@@ -1,5 +1,5 @@
-import { query } from '../db';
-import { EventRow } from '../types';
+import { query } from "../db";
+import { EventRow } from "../types";
 
 export async function fetchEventsByBook(params: {
   bookId: string;
@@ -14,7 +14,7 @@ export async function fetchEventsByBook(params: {
        AND zoom_level = $2
        AND ST_Intersects(geom::geometry, ST_MakeEnvelope($3, $4, $5, $6, 4326))
      LIMIT 200;`,
-    [params.bookId, params.zoomLevel, minLon, minLat, maxLon, maxLat]
+    [params.bookId, params.zoomLevel, minLon, minLat, maxLon, maxLat],
   );
 
   return result.rows;

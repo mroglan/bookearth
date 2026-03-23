@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import { healthRouter } from './health';
-import { booksRouter } from './books';
+import { Router } from "express";
+import { healthRouter } from "./health";
+import { booksRouter } from "./books";
 
 export const routes = Router();
 

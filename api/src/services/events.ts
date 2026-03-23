@@ -1,4 +1,4 @@
-import { fetchEventsByBook } from '../repositories';
+import { fetchEventsByBook } from "../repositories";
 
 export async function getEventsByBook(params: {
   bookId: string;

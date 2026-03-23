@@ -1,10 +1,10 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-import './globals.css';
+import "./globals.css";
 
 export const metadata = {
-  title: 'Book Earth',
-  description: 'A literary map explorer MVP'
+  title: "Book Earth",
+  description: "A literary map explorer MVP",
 };
 
 type RootLayoutProps = {

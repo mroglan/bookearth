@@ -1,7 +1,7 @@
-import { config } from './config';
-import { storage } from './storage';
-import { checkDbConnection } from './db';
-import { createApp } from './app';
+import { config } from "./config";
+import { storage } from "./storage";
+import { checkDbConnection } from "./db";
+import { createApp } from "./app";
 
 const app = createApp();
 
@@ -29,6 +29,6 @@ async function start(): Promise<void> {
 }
 
 start().catch((error) => {
-  console.error('Failed to start Book Earth API', error);
+  console.error("Failed to start Book Earth API", error);
   process.exit(1);
 });

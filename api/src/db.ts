@@ -1,5 +1,5 @@
-import { Pool, QueryResult, QueryResultRow } from 'pg';
-import { config } from './config';
+import { Pool, QueryResult, QueryResultRow } from "pg";
+import { config } from "./config";
 
 const pool = new Pool(
   config.db.connectionString
@@ -9,15 +9,18 @@ const pool = new Pool(
         port: config.db.port,
         user: config.db.user,
         password: config.db.password,
-        database: config.db.database
-      }
+        database: config.db.database,
+      },
 );
 
 export async function checkDbConnection(): Promise<void> {
-  await pool.query('SELECT 1');
+  await pool.query("SELECT 1");
 }
 
-export function query<T extends QueryResultRow>(text: string, params: Array<string | number>): Promise<QueryResult<T>> {
+export function query<T extends QueryResultRow>(
+  text: string,
+  params: Array<string | number>,
+): Promise<QueryResult<T>> {
   return pool.query<T>(text, params);
 }
 
