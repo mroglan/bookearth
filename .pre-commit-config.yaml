@@ -11,3 +11,13 @@ repos:
         entry: bash -lc "cd frontend && npm run format"
         language: system
         pass_filenames: false
+      - id: eslint-api
+        name: eslint (api)
+        entry: bash -lc "cd api && npm run lint:fix"
+        language: system
+        pass_filenames: false
+      - id: eslint-frontend
+        name: eslint (frontend)
+        entry: bash -lc "cd frontend && npm run lint:fix"
+        language: system
+        pass_filenames: false
