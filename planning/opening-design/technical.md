@@ -141,7 +141,7 @@ interface MapEngine {
 ## Data Fetching
 
 ```ts
-GET /api/books/:id/events?bbox=...&zoomLevel=...
+GET /books/:id/events?bbox=...&zoomLevel=...
 ```
 
 ---
@@ -167,9 +167,9 @@ GET /api/books/:id/events?bbox=...&zoomLevel=...
 ## Endpoints
 
 ```http
-GET /api/books/:id/map-composition
-GET /api/books/:id/events
-GET /api/events/:id
+GET /books/:id/map-composition
+GET /books/:id/events
+GET /events/:id
 ```
 
 ---
@@ -238,6 +238,11 @@ WHERE
   AND ST_Intersects(geom, ST_MakeEnvelope(...))
 LIMIT 200;
 ```
+
+Note: `zoom_level` is a temporary MVP filter. We will likely need a more adaptive
+level-of-detail algorithm that factors in event density, importance, and spatial
+scatter at the current viewport. Capture that as a follow-up ticket before
+shipping beyond MVP.
 
 ---
 

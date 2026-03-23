@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: bookearth_test
+      POSTGRES_USER: bookearth
+      POSTGRES_PASSWORD: bookearth
+    ports:
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  db_data:

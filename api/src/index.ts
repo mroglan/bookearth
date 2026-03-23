@@ -1,18 +1,34 @@
-import http from 'http';
+import { config } from "./config";
+import { storage } from "./storage";
+import { checkDbConnection } from "./db";
+import { createApp } from "./app";
 
-const port = Number(process.env.PORT) || 4000;
+const app = createApp();
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/health') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ status: 'ok' }));
-    return;
+async function waitForDb(attempts = 10, delayMs = 1000): Promise<void> {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await checkDbConnection();
+      return;
+    } catch (error) {
+      if (attempt === attempts) {
+        throw error;
+      }
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
+}
 
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Book Earth API skeleton');
-});
+async function start(): Promise<void> {
+  await storage.ensureReady();
+  await waitForDb();
 
-server.listen(port, () => {
-  console.log(`Book Earth API listening on http://localhost:${port}`);
+  app.listen(config.port, () => {
+    console.log(`Book Earth API listening on http://localhost:${config.port}`);
+  });
+}
+
+start().catch((error) => {
+  console.error("Failed to start Book Earth API", error);
+  process.exit(1);
 });
