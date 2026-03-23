@@ -14,8 +14,11 @@ type RootLayoutProps = {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
+      <head>
+        <link rel="stylesheet" href="/cesium/Widgets/widgets.css" />
+      </head>
       <body>
-        <main className="page">{children}</main>
+        <main className="app">{children}</main>
       </body>
     </html>
   );
