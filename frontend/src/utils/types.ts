@@ -4,7 +4,6 @@ export type BookEvent = {
   description: string | null;
   lat: number;
   lon: number;
-  zoom_level: number;
   importance: number | null;
   narrative_index: number | null;
 };

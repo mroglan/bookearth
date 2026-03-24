@@ -20,7 +20,6 @@ export function EventDetails({ event }: EventDetailsProps) {
         {event.description ?? "No description provided."}
       </p>
       <div className="mt-4 flex flex-wrap gap-2 text-[0.7rem] uppercase tracking-[0.12em] text-slate-600">
-        <span className="rounded-full bg-[#f3e8dc] px-3 py-1">Zoom {event.zoom_level}</span>
         {event.importance !== null && (
           <span className="rounded-full bg-[#f3e8dc] px-3 py-1">Importance {event.importance}</span>
         )}
