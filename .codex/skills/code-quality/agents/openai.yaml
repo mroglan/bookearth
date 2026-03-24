@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Quality"
+  short_description: "Quick code quality check for non-trivial changes"
+  default_prompt: "Do a quick quality pass on the recent code changes and apply a small, safe refactor if it improves clarity."
