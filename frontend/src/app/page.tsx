@@ -1,104 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EventDetails } from "../components/EventDetails";
+import { GlobeOverlay } from "../components/GlobeOverlay";
+import { fetchEvents, fetchMapComposition, BOOK_ID } from "../services/books";
+import { applyMapComposition, bboxKey, rectangleToBbox, toZoomLevel } from "../utils/cesium";
+import type { BookEvent, MapComposition, RectangleLike } from "../utils/types";
 
 type CesiumModule = typeof import("cesium");
 
-type BookEvent = {
-  id: string;
-  title: string;
-  description: string | null;
-  lat: number;
-  lon: number;
-  zoom_level: number;
-  importance: number | null;
-  narrative_index: number | null;
-};
-
-type MapComposition = {
-  base?: "terrain" | "satellite" | "minimal" | string;
-  overlays?: Array<{ type: string; variant?: string; opacity?: number }>;
-  postProcessing?: {
-    colorGrade?: "sepia" | "dark" | "muted" | string;
-  };
-};
-
-type RectangleLike = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-};
-
-const BOOK_ID = "1";
 const CESIUM_BASE_URL = "/cesium/";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
-
-const COLOR_GRADES: Record<string, string> = {
-  muted: "saturate(0.75) contrast(1.05)",
-  sepia: "sepia(0.35) saturate(0.8)",
-  dark: "brightness(0.9) saturate(0.85) contrast(1.05)",
-};
-
-function toZoomLevel(height: number): number {
-  if (height > 20_000_000) return 2;
-  if (height > 12_000_000) return 3;
-  if (height > 7_000_000) return 4;
-  if (height > 4_000_000) return 5;
-  if (height > 2_000_000) return 6;
-  if (height > 1_000_000) return 7;
-  if (height > 500_000) return 8;
-  if (height > 250_000) return 9;
-  return 10;
-}
-
-function rectangleToBbox(
-  Cesium: CesiumModule,
-  rect: RectangleLike | undefined,
-): [number, number, number, number] {
-  if (!rect) {
-    return [-180, -90, 180, 90];
-  }
-  const west = Cesium.Math.toDegrees(rect.west);
-  const south = Cesium.Math.toDegrees(rect.south);
-  const east = Cesium.Math.toDegrees(rect.east);
-  const north = Cesium.Math.toDegrees(rect.north);
-  return [west, south, east, north];
-}
-
-function bboxKey(bbox: [number, number, number, number], zoomLevel: number): string {
-  return `${bbox.map((value) => value.toFixed(3)).join(",")}:${zoomLevel}`;
-}
-
-function applyMapComposition(
-  Cesium: CesiumModule,
-  viewer: import("cesium").Viewer,
-  composition: MapComposition | null,
-): { base: string; filter: string } {
-  const base = composition?.base ?? "terrain";
-  viewer.imageryLayers.removeAll();
-  viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#efe5d9");
-
-  if (base === "satellite") {
-    viewer.imageryLayers.addImageryProvider(
-      new Cesium.UrlTemplateImageryProvider({
-        url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      }),
-    );
-  } else if (base === "minimal") {
-    viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#f1ede6");
-  } else {
-    viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: "https://tile.openstreetmap.org/",
-      }),
-    );
-  }
-
-  const colorGrade = composition?.postProcessing?.colorGrade ?? "";
-  const filter = COLOR_GRADES[colorGrade] ?? "";
-  return { base, filter };
-}
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -118,19 +29,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   const bboxLabel = useMemo(() => bbox.map((value) => value.toFixed(2)).join(", "), [bbox]);
-
-  const fetchComposition = useCallback(async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/books/${BOOK_ID}/map-composition`);
-      if (!response.ok) {
-        throw new Error("Failed to load map composition");
-      }
-      const data = (await response.json()) as MapComposition;
-      setComposition(data);
-    } catch (fetchError) {
-      setError(fetchError instanceof Error ? fetchError.message : "Unknown error");
-    }
-  }, []);
 
   const renderEvents = useCallback((Cesium: CesiumModule, nextEvents: BookEvent[]) => {
     const dataSource = dataSourceRef.current;
@@ -163,7 +61,7 @@ export default function Home() {
     });
   }, []);
 
-  const fetchEvents = useCallback(async () => {
+  const refreshEvents = useCallback(async () => {
     const viewer = viewerRef.current;
     const Cesium = cesiumRef.current;
     if (!viewer || !Cesium) {
@@ -188,23 +86,13 @@ export default function Home() {
     setStatus("Fetching events...");
 
     try {
-      const params = new URLSearchParams({
-        bbox: nextBbox.join(","),
-        zoomLevel: String(nextZoom),
-      });
-      const response = await fetch(
-        `${API_BASE_URL}/api/books/${BOOK_ID}/events?${params.toString()}`,
-      );
-      if (!response.ok) {
-        throw new Error("Failed to load events");
-      }
-      const data = (await response.json()) as { events: BookEvent[] };
-      setEvents(data.events);
-      renderEvents(Cesium, data.events);
-      if (selectedEvent && !data.events.find((event) => event.id === selectedEvent.id)) {
+      const data = await fetchEvents({ bbox: nextBbox, zoomLevel: nextZoom });
+      setEvents(data);
+      renderEvents(Cesium, data);
+      if (selectedEvent && !data.find((event) => event.id === selectedEvent.id)) {
         setSelectedEvent(null);
       }
-      setStatus(`Loaded ${data.events.length} events`);
+      setStatus(`Loaded ${data.length} events`);
       setError(null);
     } catch (fetchError) {
       setError(fetchError instanceof Error ? fetchError.message : "Unknown error");
@@ -284,15 +172,20 @@ export default function Home() {
           clearTimeout(debounceTimer);
         }
         debounceTimer = setTimeout(() => {
-          void fetchEvents();
+          void refreshEvents();
         }, 200);
       };
 
       viewer.camera.moveEnd.addEventListener(onMoveEnd);
 
-      void fetchComposition();
-      void fetchEvents();
+      try {
+        const data = await fetchMapComposition();
+        setComposition(data);
+      } catch (fetchError) {
+        setError(fetchError instanceof Error ? fetchError.message : "Unknown error");
+      }
 
+      void refreshEvents();
       setStatus("Ready");
 
       return () => {
@@ -320,7 +213,7 @@ export default function Home() {
         viewerRef.current = null;
       }
     };
-  }, [fetchComposition, fetchEvents]);
+  }, [refreshEvents]);
 
   const overlaysLabel = composition?.overlays?.length
     ? `${composition.overlays.length} overlay${composition.overlays.length === 1 ? "" : "s"}`
@@ -328,40 +221,35 @@ export default function Home() {
 
   return (
     <>
-      <section className="panel">
+      <section className="flex h-full flex-col gap-5 rounded-[28px] border border-[#e1d5c6] bg-white/90 p-7 shadow-[0_24px_60px_rgba(21,17,11,0.08)]">
         <div>
-          <p className="section-title">Book Earth MVP</p>
-          <h1>Around the World in Eighty Days</h1>
+          <p className="text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">Book Earth MVP</p>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-900">
+            Around the World in Eighty Days
+          </h1>
         </div>
-        <p>
+        <p className="text-sm leading-relaxed text-slate-600">
           This globe is live-wired to the MVP API. Pan, zoom, and tilt to watch the camera bounding
           box and zoom-level filter reshape the event constellation.
         </p>
-        <div className="panel-meta">
+        <div className="grid gap-2 text-sm text-slate-600">
           <div>Book id: {BOOK_ID}</div>
           <div>Base style: {baseStyle}</div>
           <div>Composition: {overlaysLabel}</div>
         </div>
-        <div className="panel-section">
-          <p className="section-title">Selected Moment</p>
-          {selectedEvent ? (
-            <div className="event-card">
-              <h2>{selectedEvent.title}</h2>
-              <p>{selectedEvent.description ?? "No description provided."}</p>
-              <div className="badge-row">
-                <span className="badge">Zoom {selectedEvent.zoom_level}</span>
-                {selectedEvent.importance !== null && (
-                  <span className="badge">Importance {selectedEvent.importance}</span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p>Click an event marker to inspect the narrative details.</p>
-          )}
+        <div className="border-t border-[#e1d5c6] pt-4">
+          <p className="text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">
+            Selected Moment
+          </p>
+          <div className="mt-3">
+            <EventDetails event={selectedEvent} />
+          </div>
         </div>
-        <div className="panel-section">
-          <p className="section-title">Viewport Status</p>
-          <div className="panel-meta">
+        <div className="border-t border-[#e1d5c6] pt-4">
+          <p className="text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">
+            Viewport Status
+          </p>
+          <div className="mt-2 grid gap-1 text-sm text-slate-600">
             <div>Status: {status}</div>
             <div>Zoom level: {zoomLevel}</div>
             <div>Events visible: {events.length}</div>
@@ -370,22 +258,13 @@ export default function Home() {
           </div>
         </div>
       </section>
-      <section className="globe-shell">
-        <div className="globe" ref={containerRef} style={{ filter }} />
-        <div className="globe-overlay">
-          <div className="status-row">
-            <span className="status-label">Zoom</span>
-            <span>{zoomLevel}</span>
-          </div>
-          <div className="status-row">
-            <span className="status-label">Events</span>
-            <span>{events.length}</span>
-          </div>
-          <div className="status-row">
-            <span className="status-label">Filter</span>
-            <span>{filter ? "On" : "Off"}</span>
-          </div>
-        </div>
+      <section className="relative min-h-[620px] overflow-hidden rounded-[28px] border border-[#e1d5c6] bg-[#efe5d9] shadow-[0_30px_80px_rgba(22,18,13,0.14)] lg:min-h-[720px]">
+        <div className="absolute inset-0" ref={containerRef} style={{ filter }} />
+        <GlobeOverlay
+          zoomLevel={zoomLevel}
+          eventCount={events.length}
+          hasFilter={Boolean(filter)}
+        />
       </section>
     </>
   );
