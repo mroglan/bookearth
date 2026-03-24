@@ -5,7 +5,7 @@ Epic: MVP
 
 # User Statement
 
-As a maintainer of Book Earth, I want to use the same zod objects when sending a request from the backend, and parsing it on the frontend, so that I have more confident type safety.
+As a maintainer of Book Earth, I want to use protobuf for sending requests between frontend and backend, so that typings are shared and enforced.
 
 # Acceptance Critera
 - Plan is presented to human based on researched best practices
