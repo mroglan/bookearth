@@ -1,7 +1,5 @@
 import { config } from "../config";
 
-const configuredOrigins = new Set(config.cors.origins);
-
 export function corsMiddleware(
   req: { headers: { origin?: string }; method?: string },
   res: {
@@ -17,7 +15,7 @@ export function corsMiddleware(
     return next();
   }
 
-  if (!configuredOrigins.has(origin)) {
+  if (!config.cors.origins.includes(origin)) {
     res.statusCode = 403;
     return res.end();
   }

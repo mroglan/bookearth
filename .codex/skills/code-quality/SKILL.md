@@ -16,3 +16,4 @@ Do a fast, low-risk review of the provided code and apply a small refactor that 
 ## Heuristics (keep it small)
 - Prefer early returns over nested blocks.
 - Eliminate duplicate condition checks.
+- Scrutinize the use of globals variables in a file which are not constants (even if not explicitly exported). Prefer consolidating logic involving multiple global variables reading from each other in a function.
