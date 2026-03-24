@@ -17,6 +17,7 @@ export default function Home() {
   const dataSourceRef = useRef<import("cesium").CustomDataSource | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
   const lastRequestRef = useRef<string | null>(null);
+  const selectedEventRef = useRef<BookEvent | null>(null);
 
   const [events, setEvents] = useState<BookEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<BookEvent | null>(null);
@@ -89,8 +90,10 @@ export default function Home() {
       const data = await fetchEvents({ bbox: nextBbox, zoomLevel: nextZoom });
       setEvents(data);
       renderEvents(Cesium, data);
-      if (selectedEvent && !data.find((event) => event.id === selectedEvent.id)) {
+      const currentSelection = selectedEventRef.current;
+      if (currentSelection && !data.find((event) => event.id === currentSelection.id)) {
         setSelectedEvent(null);
+        selectedEventRef.current = null;
       }
       setStatus(`Loaded ${data.length} events`);
       setError(null);
@@ -98,7 +101,7 @@ export default function Home() {
       setError(fetchError instanceof Error ? fetchError.message : "Unknown error");
       setStatus("Event fetch failed");
     }
-  }, [renderEvents, selectedEvent]);
+  }, [renderEvents]);
 
   useEffect(() => {
     if (!composition || !viewerRef.current || !cesiumRef.current) {
@@ -162,8 +165,10 @@ export default function Home() {
         const eventData = pickedId?.eventData ?? null;
         if (eventData) {
           setSelectedEvent(eventData);
+          selectedEventRef.current = eventData;
         } else {
           setSelectedEvent(null);
+          selectedEventRef.current = null;
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
