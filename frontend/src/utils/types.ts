@@ -16,10 +16,3 @@ export type MapComposition = {
     colorGrade?: "sepia" | "dark" | "muted" | string;
   };
 };
-
-export type RectangleLike = {
-  west: number;
-  south: number;
-  east: number;
-  north: number;
-};

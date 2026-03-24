@@ -11,15 +11,8 @@ export async function fetchMapComposition(): Promise<MapComposition> {
   return (await response.json()) as MapComposition;
 }
 
-export async function fetchEvents(params: {
-  bbox: [number, number, number, number];
-  zoomLevel: number;
-}): Promise<BookEvent[]> {
-  const search = new URLSearchParams({
-    bbox: params.bbox.join(","),
-    zoomLevel: String(params.zoomLevel),
-  });
-  const response = await fetch(`${config.apiBaseUrl}/books/${BOOK_ID}/events?${search.toString()}`);
+export async function fetchEvents(): Promise<BookEvent[]> {
+  const response = await fetch(`${config.apiBaseUrl}/books/${BOOK_ID}/events`);
   if (!response.ok) {
     throw new Error("Failed to load events");
   }

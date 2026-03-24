@@ -1,4 +1,4 @@
-import type { MapComposition, RectangleLike } from "./types";
+import type { MapComposition } from "./types";
 
 type CesiumModule = typeof import("cesium");
 
@@ -7,36 +7,6 @@ const COLOR_GRADES: Record<string, string> = {
   sepia: "sepia(0.35) saturate(0.8)",
   dark: "brightness(0.9) saturate(0.85) contrast(1.05)",
 };
-
-export function toZoomLevel(height: number): number {
-  if (height > 20_000_000) return 2;
-  if (height > 12_000_000) return 3;
-  if (height > 7_000_000) return 4;
-  if (height > 4_000_000) return 5;
-  if (height > 2_000_000) return 6;
-  if (height > 1_000_000) return 7;
-  if (height > 500_000) return 8;
-  if (height > 250_000) return 9;
-  return 10;
-}
-
-export function rectangleToBbox(
-  Cesium: CesiumModule,
-  rect: RectangleLike | undefined,
-): [number, number, number, number] {
-  if (!rect) {
-    return [-180, -90, 180, 90];
-  }
-  const west = Cesium.Math.toDegrees(rect.west);
-  const south = Cesium.Math.toDegrees(rect.south);
-  const east = Cesium.Math.toDegrees(rect.east);
-  const north = Cesium.Math.toDegrees(rect.north);
-  return [west, south, east, north];
-}
-
-export function bboxKey(bbox: [number, number, number, number], zoomLevel: number): string {
-  return `${bbox.map((value) => value.toFixed(3)).join(",")}:${zoomLevel}`;
-}
 
 export function applyMapComposition(
   Cesium: CesiumModule,

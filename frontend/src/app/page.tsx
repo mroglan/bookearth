@@ -1,11 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EventDetails } from "../components/EventDetails";
 import { GlobeOverlay } from "../components/GlobeOverlay";
 import { fetchEvents, fetchMapComposition, BOOK_ID } from "../services/books";
-import { applyMapComposition, bboxKey, rectangleToBbox, toZoomLevel } from "../utils/cesium";
-import type { BookEvent, MapComposition, RectangleLike } from "../utils/types";
+import { applyMapComposition } from "../utils/cesium";
+import type { BookEvent, MapComposition } from "../utils/types";
 
 type CesiumModule = typeof import("cesium");
 
@@ -16,7 +16,6 @@ export default function Home() {
   const viewerRef = useRef<import("cesium").Viewer | null>(null);
   const dataSourceRef = useRef<import("cesium").CustomDataSource | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
-  const lastRequestRef = useRef<string | null>(null);
   const selectedEventRef = useRef<BookEvent | null>(null);
 
   const [events, setEvents] = useState<BookEvent[]>([]);
@@ -24,12 +23,9 @@ export default function Home() {
   const [composition, setComposition] = useState<MapComposition | null>(null);
   const [baseStyle, setBaseStyle] = useState("terrain");
   const [status, setStatus] = useState("Loading Cesium...");
-  const [zoomLevel, setZoomLevel] = useState(6);
-  const [bbox, setBbox] = useState<[number, number, number, number]>([-180, -90, 180, 90]);
   const [filter, setFilter] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const bboxLabel = useMemo(() => bbox.map((value) => value.toFixed(2)).join(", "), [bbox]);
+  const hasEvents = events.length > 0;
 
   const renderEvents = useCallback((Cesium: CesiumModule, nextEvents: BookEvent[]) => {
     const dataSource = dataSourceRef.current;
@@ -69,25 +65,10 @@ export default function Home() {
       return;
     }
 
-    const rect = viewer.camera.computeViewRectangle(viewer.scene.globe.ellipsoid) as
-      | RectangleLike
-      | undefined;
-    const nextBbox = rectangleToBbox(Cesium, rect);
-    const height = viewer.camera.positionCartographic.height;
-    const nextZoom = toZoomLevel(height);
-    const requestKey = bboxKey(nextBbox, nextZoom);
-
-    if (lastRequestRef.current === requestKey) {
-      return;
-    }
-
-    lastRequestRef.current = requestKey;
-    setZoomLevel(nextZoom);
-    setBbox(nextBbox);
     setStatus("Fetching events...");
 
     try {
-      const data = await fetchEvents({ bbox: nextBbox, zoomLevel: nextZoom });
+      const data = await fetchEvents();
       setEvents(data);
       renderEvents(Cesium, data);
       const currentSelection = selectedEventRef.current;
@@ -118,7 +99,6 @@ export default function Home() {
     }
 
     let handler: import("cesium").ScreenSpaceEventHandler | null = null;
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const initialize = async () => {
       const Cesium = await import("cesium");
@@ -172,17 +152,6 @@ export default function Home() {
         }
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
-      const onMoveEnd = () => {
-        if (debounceTimer) {
-          clearTimeout(debounceTimer);
-        }
-        debounceTimer = setTimeout(() => {
-          void refreshEvents();
-        }, 200);
-      };
-
-      viewer.camera.moveEnd.addEventListener(onMoveEnd);
-
       try {
         const data = await fetchMapComposition();
         setComposition(data);
@@ -193,9 +162,7 @@ export default function Home() {
       void refreshEvents();
       setStatus("Ready");
 
-      return () => {
-        viewer.camera.moveEnd.removeEventListener(onMoveEnd);
-      };
+      return () => {};
     };
 
     let cleanup: (() => void) | null = null;
@@ -204,9 +171,6 @@ export default function Home() {
     });
 
     return () => {
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
       if (handler) {
         handler.destroy();
       }
@@ -234,8 +198,8 @@ export default function Home() {
           </h1>
         </div>
         <p className="text-sm leading-relaxed text-slate-600">
-          This globe is live-wired to the MVP API. Pan, zoom, and tilt to watch the camera bounding
-          box and zoom-level filter reshape the event constellation.
+          This globe is live-wired to the MVP API. Pan, zoom, and tilt to explore the full event set
+          for the book.
         </p>
         <div className="grid gap-2 text-sm text-slate-600">
           <div>Book id: {BOOK_ID}</div>
@@ -256,9 +220,7 @@ export default function Home() {
           </p>
           <div className="mt-2 grid gap-1 text-sm text-slate-600">
             <div>Status: {status}</div>
-            <div>Zoom level: {zoomLevel}</div>
             <div>Events visible: {events.length}</div>
-            <div>BBox: {bboxLabel}</div>
             {error ? <div>Error: {error}</div> : null}
           </div>
         </div>
@@ -266,7 +228,7 @@ export default function Home() {
       <section className="relative min-h-[620px] overflow-hidden rounded-[28px] border border-[#e1d5c6] bg-[#efe5d9] shadow-[0_30px_80px_rgba(22,18,13,0.14)] lg:min-h-[720px]">
         <div className="absolute inset-0" ref={containerRef} style={{ filter }} />
         <GlobeOverlay
-          zoomLevel={zoomLevel}
+          hasEvents={hasEvents}
           eventCount={events.length}
           hasFilter={Boolean(filter)}
         />
