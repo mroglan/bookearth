@@ -1,4 +1,8 @@
+.vscode/
+
 node_modules/
 
 # frontend
 .next/
+frontend/public/cesium/
+frontend/tsconfig.tsbuildinfo

@@ -11,10 +11,8 @@ describe("API endpoints", () => {
     expect(response.body).toEqual({ status: "ok", db: "ok" });
   });
 
-  it("returns events for a seeded book within bbox", async () => {
-    const response = await request(app).get(
-      "/books/1/events?bbox=-123.2,37.6,-122.1,38.2&zoomLevel=6",
-    );
+  it("returns events for a seeded book", async () => {
+    const response = await request(app).get("/books/1/events");
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body.events)).toBe(true);

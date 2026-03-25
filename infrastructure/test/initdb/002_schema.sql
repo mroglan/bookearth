@@ -18,7 +18,6 @@ CREATE TABLE IF NOT EXISTS events (
   lat DOUBLE PRECISION NOT NULL,
   lon DOUBLE PRECISION NOT NULL,
   geom geometry(Point, 4326) NOT NULL,
-  zoom_level INT NOT NULL DEFAULT 6,
   importance INT,
   narrative_index INT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
