@@ -1,17 +1,11 @@
 package routes
 
 import (
-	"net/http"
+	"github.com/go-chi/chi/v5"
 
 	"bookearth/backend/internal/controllers"
-
-	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter() http.Handler {
-	r := chi.NewRouter()
-
+func Register(r *chi.Mux) {
 	r.Get("/health", controllers.Health)
-
-	return r
 }
