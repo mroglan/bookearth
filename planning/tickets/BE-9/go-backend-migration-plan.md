@@ -22,9 +22,9 @@ A full Go rewrite now can be justified **if** you treat this as a foundational p
 ## Proposed Go Stack
 - Router: `chi` (lightweight, idiomatic)
 - DB: `pgx` with connection pool
-- Config: `envconfig` or `viper` (prefer minimal)
+- Config: `envconfig` (prefer minimal)
 - Validation: `go-playground/validator`
-- Logging: `zap` or `slog` (standard library in Go 1.21+)
+- Logging: `slog` (standard library in Go 1.21+)
 - Migrations: `golang-migrate` (for future changes; can be added later)
 - Testing: `testify` + `httptest`
 
@@ -37,6 +37,16 @@ A full Go rewrite now can be justified **if** you treat this as a foundational p
 - Environment-based config (dev/test/prod).
 
 ## Migration Plan (Single Swoop)
+
+### Phase 0 - Review current /api structure
+- We want to follow the same general design pattern: 
+- clear separation between routes, controllers, services, and repositories
+- middleware support
+- postgres database connection
+- Dockerfile to build and run
+- simple way to run locally (without needing to build docker image)
+
+Make sure you understand this setup before proceeding.
 
 ### Phase 1 — Go Service Skeleton
 - Create `backend/` folder (this will replace `/api`).
