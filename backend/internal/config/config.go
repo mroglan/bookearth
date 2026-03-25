@@ -28,31 +28,13 @@ type Config struct {
 	DB      DBConfig
 }
 
-func Load() Config {
-	env := strings.TrimSpace(os.Getenv("BACKEND_ENV"))
-	if env == "" {
-		env = "development"
-	}
+var globalConfig *Config
 
-	defaults := defaultsForEnv(env)
-	fmt.Printf("Using %s config\n", strings.ToUpper(env))
-
-	return Config{
-		Env:     env,
-		Port:    getInt("PORT", defaults.Port),
-		DataDir: getString("DATA_DIR", defaults.DataDir),
-		CORS: CORSConfig{
-			Origins: parseCSV(getString("CORS_ORIGINS", defaults.CORS.OriginsCSV)),
-		},
-		DB: DBConfig{
-			ConnectionString: getString("DATABASE_URL", defaults.DB.ConnectionString),
-			Host:             getString("DB_HOST", getString("PGHOST", defaults.DB.Host)),
-			Port:             getInt("DB_PORT", getInt("PGPORT", defaults.DB.Port)),
-			User:             getString("DB_USER", getString("PGUSER", defaults.DB.User)),
-			Password:         getString("DB_PASSWORD", getString("PGPASSWORD", defaults.DB.Password)),
-			Database:         getString("DB_NAME", getString("PGDATABASE", defaults.DB.Database)),
-		},
+func LoadConfig() *Config {
+	if globalConfig == nil {
+		globalConfig = load()
 	}
+	return globalConfig
 }
 
 type envDefaults struct {
@@ -73,6 +55,33 @@ type dbDefaults struct {
 	User             string
 	Password         string
 	Database         string
+}
+
+func load() *Config {
+	env := strings.TrimSpace(os.Getenv("BACKEND_ENV"))
+	if env == "" {
+		env = "development"
+	}
+
+	defaults := defaultsForEnv(env)
+	fmt.Printf("Using %s config\n", strings.ToUpper(env))
+
+	return &Config{
+		Env:     env,
+		Port:    getInt("PORT", defaults.Port),
+		DataDir: getString("DATA_DIR", defaults.DataDir),
+		CORS: CORSConfig{
+			Origins: parseCSV(getString("CORS_ORIGINS", defaults.CORS.OriginsCSV)),
+		},
+		DB: DBConfig{
+			ConnectionString: getString("DATABASE_URL", defaults.DB.ConnectionString),
+			Host:             getString("DB_HOST", getString("PGHOST", defaults.DB.Host)),
+			Port:             getInt("DB_PORT", getInt("PGPORT", defaults.DB.Port)),
+			User:             getString("DB_USER", getString("PGUSER", defaults.DB.User)),
+			Password:         getString("DB_PASSWORD", getString("PGPASSWORD", defaults.DB.Password)),
+			Database:         getString("DB_NAME", getString("PGDATABASE", defaults.DB.Database)),
+		},
+	}
 }
 
 func defaultsForEnv(env string) envDefaults {

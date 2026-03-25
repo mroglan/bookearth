@@ -14,9 +14,10 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
 
-	handler := app.New(cfg)
+	cfg := config.LoadConfig()
+
+	handler := app.New()
 
 	server := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),

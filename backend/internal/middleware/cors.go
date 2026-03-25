@@ -6,6 +6,7 @@ import (
 )
 
 func CORS(next http.Handler) http.Handler {
+	cfg := config.LoadConfig()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		if origin == "" {
@@ -14,7 +15,7 @@ func CORS(next http.Handler) http.Handler {
 		}
 
 		allowed := false
-		for _, o := range config.CORSConfig.Origins {
+		for _, o := range cfg.CORS.Origins {
 			if origin == o {
 				allowed = true
 				break
