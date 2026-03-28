@@ -12,7 +12,7 @@ type BookViewProps = {
 };
 
 export function BookView({ events, composition }: BookViewProps) {
-  const { containerRef, selectedEvent, status, error } = useCesiumGlobe(events, composition);
+  const { containerRef, selectedEvent } = useCesiumGlobe(events, composition);
   const { base, filter } = getCompositionStyle(composition);
 
   return (
@@ -22,8 +22,6 @@ export function BookView({ events, composition }: BookViewProps) {
         eventCount={events.length}
         selectedEvent={selectedEvent}
         baseStyle={base}
-        status={status}
-        error={error}
       />
       <GlobeSection
         containerRef={containerRef}

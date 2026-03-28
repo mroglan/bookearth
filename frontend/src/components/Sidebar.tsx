@@ -6,19 +6,10 @@ type SidebarProps = {
   eventCount: number;
   selectedEvent: BookEvent | null;
   baseStyle: string;
-  status: string;
-  error: string | null;
 };
 
-export function Sidebar({
-  composition,
-  eventCount,
-  selectedEvent,
-  baseStyle,
-  status,
-  error,
-}: SidebarProps) {
-  const overlaysLabel = composition?.overlays?.length
+export function Sidebar({ composition, eventCount, selectedEvent, baseStyle }: SidebarProps) {
+  const overlaysLabel = composition?.overlays.length
     ? `${composition.overlays.length} overlay${composition.overlays.length === 1 ? "" : "s"}`
     : "No overlays";
 
@@ -38,6 +29,7 @@ export function Sidebar({
         <div>Book id: {BOOK_ID}</div>
         <div>Base style: {baseStyle}</div>
         <div>Composition: {overlaysLabel}</div>
+        <div>Events: {eventCount}</div>
       </div>
       <div className="border-t border-[#e1d5c6] pt-4">
         <p className="text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">Selected Moment</p>
@@ -61,14 +53,6 @@ export function Sidebar({
               Click an event marker to inspect the narrative details.
             </p>
           )}
-        </div>
-      </div>
-      <div className="border-t border-[#e1d5c6] pt-4">
-        <p className="text-[0.72rem] uppercase tracking-[0.2em] text-slate-500">Viewport Status</p>
-        <div className="mt-2 grid gap-1 text-sm text-slate-600">
-          <div>Status: {status}</div>
-          <div>Events visible: {eventCount}</div>
-          {error ? <div>Error: {error}</div> : null}
         </div>
       </div>
     </section>

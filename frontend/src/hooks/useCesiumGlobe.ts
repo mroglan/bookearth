@@ -5,6 +5,7 @@ import { applyMapComposition } from "../utils/cesium";
 import type { BookEvent, MapComposition } from "../utils/types";
 
 type CesiumModule = typeof import("cesium");
+type CesiumEntityWithEvent = import("cesium").Entity & { eventData: BookEvent };
 
 const CESIUM_BASE_URL = "/cesium/";
 
@@ -15,8 +16,6 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
   const cesiumRef = useRef<CesiumModule | null>(null);
 
   const [selectedEvent, setSelectedEvent] = useState<BookEvent | null>(null);
-  const [status, setStatus] = useState("Loading...");
-  const [error, setError] = useState<string | null>(null);
 
   const renderEvents = useCallback((Cesium: CesiumModule, nextEvents: BookEvent[]) => {
     const dataSource = dataSourceRef.current;
@@ -43,7 +42,7 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0.0, 3_000_000.0),
         },
       });
-      (entity as import("cesium").Entity & { eventData?: BookEvent }).eventData = event;
+      (entity as CesiumEntityWithEvent).eventData = event;
     });
   }, []);
 
@@ -52,7 +51,6 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
     const Cesium = cesiumRef.current;
     if (!Cesium || !viewerRef.current) return;
     renderEvents(Cesium, events);
-    setStatus(`Loaded ${events.length} events`);
   }, [events, renderEvents]);
 
   // Apply composition when it changes
@@ -86,9 +84,6 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
         infoBox: false,
         selectionIndicator: false,
         shouldAnimate: false,
-        baseLayer: new Cesium.ImageryLayer(
-          new Cesium.OpenStreetMapImageryProvider({ url: "https://tile.openstreetmap.org/" }),
-        ),
         terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       });
 
@@ -107,20 +102,15 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
       handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
       handler.setInputAction((movement: { position: import("cesium").Cartesian2 }) => {
         const picked = viewer.scene.pick(movement.position) as { id?: unknown } | undefined;
-        const pickedId = picked?.id as { eventData?: BookEvent } | undefined;
-        setSelectedEvent(pickedId?.eventData ?? null);
+        const entity = picked?.id as CesiumEntityWithEvent | undefined;
+        setSelectedEvent(entity?.eventData ?? null);
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
       if (composition) {
-        try {
-          applyMapComposition(Cesium, viewer, composition);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Unknown error");
-        }
+        applyMapComposition(Cesium, viewer, composition);
       }
 
       renderEvents(Cesium, events);
-      setStatus(`Loaded ${events.length} events`);
     };
 
     void initialize();
@@ -136,5 +126,5 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { containerRef, selectedEvent, status, error };
+  return { containerRef, selectedEvent };
 }
