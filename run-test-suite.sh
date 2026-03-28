@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-compose_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/infrastructure/test" && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+compose_dir="$root_dir/infrastructure/test"
 
 cleanup() {
   (cd "$compose_dir" && docker compose down -v)
@@ -18,5 +19,8 @@ for attempt in {1..10}; do
   sleep 0.5
 done
 
-cd "$(dirname "${BASH_SOURCE[0]}")/backend"
+cd "$root_dir/backend"
 BACKEND_ENV=test go test -v ./...
+
+cd "$root_dir/frontend"
+npm test
