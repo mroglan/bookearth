@@ -30,18 +30,16 @@ func (r *PostgresBookRepository) GetMapCompositionById(
 	var raw []byte
 	if err := row.Scan(&raw); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, false, nil
+			return model.MapComposition{}, false, nil
 		}
-		return nil, false, err
-	}
-
-	if len(raw) == 0 {
-		return model.MapComposition{}, true, nil
+		return model.MapComposition{}, false, err
 	}
 
 	var composition model.MapComposition
-	if err := json.Unmarshal(raw, &composition); err != nil {
-		return nil, false, err
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &composition); err != nil {
+			return model.MapComposition{}, false, err
+		}
 	}
 
 	return composition, true, nil

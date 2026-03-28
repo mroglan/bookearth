@@ -12,9 +12,9 @@ export function getCompositionStyle(composition: MapComposition | null): {
   base: string;
   filter: string;
 } {
-  const base = composition?.base ?? "terrain";
-  const filter = COLOR_GRADES[composition?.postProcessing?.colorGrade ?? ""] ?? "";
-  return { base, filter };
+  if (!composition) return { base: "terrain", filter: "" };
+  const filter = COLOR_GRADES[composition.postProcessing?.colorGrade ?? ""] ?? "";
+  return { base: composition.base, filter };
 }
 
 export function applyMapComposition(
