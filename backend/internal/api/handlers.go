@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -51,13 +52,14 @@ func (a *API) handleBookMapComposition(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
-	composition, found, err := a.booksRepo.GetMapCompositionById(r.Context(), bookID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal server error")
+	composition, err := a.booksRepo.GetMapCompositionById(r.Context(), bookID)
+	if errors.Is(err, model.ErrNotFound) {
+		writeError(w, http.StatusNotFound, "book not found")
 		return
 	}
-	if !found {
-		writeError(w, http.StatusNotFound, "book not found")
+
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 

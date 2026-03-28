@@ -9,8 +9,8 @@ export type BookEvent = {
 };
 
 export type MapComposition = {
-  base?: "terrain" | "satellite" | "minimal" | string;
-  overlays?: Array<{ type: string; variant?: string; opacity?: number }>;
+  base: "terrain" | "satellite" | "minimal" | string;
+  overlays: Array<{ type: string; variant?: string; opacity?: number }>;
   postProcessing?: {
     colorGrade?: "sepia" | "dark" | "muted" | string;
   };

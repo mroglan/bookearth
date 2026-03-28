@@ -20,7 +20,7 @@ func NewPostgresBookRepository(conn Connection) *PostgresBookRepository {
 func (r *PostgresBookRepository) GetMapCompositionById(
 	ctx context.Context,
 	bookID string,
-) (model.MapComposition, bool, error) {
+) (model.MapComposition, error) {
 	row := r.conn.QueryRow(
 		ctx,
 		"SELECT map_composition FROM books WHERE id = $1 LIMIT 1;",
@@ -30,19 +30,17 @@ func (r *PostgresBookRepository) GetMapCompositionById(
 	var raw []byte
 	if err := row.Scan(&raw); err != nil {
 		if err == pgx.ErrNoRows {
-			return nil, false, nil
+			return model.MapComposition{}, model.ErrNotFound
 		}
-		return nil, false, err
-	}
-
-	if len(raw) == 0 {
-		return model.MapComposition{}, true, nil
+		return model.MapComposition{}, err
 	}
 
 	var composition model.MapComposition
-	if err := json.Unmarshal(raw, &composition); err != nil {
-		return nil, false, err
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &composition); err != nil {
+			return model.MapComposition{}, err
+		}
 	}
 
-	return composition, true, nil
+	return composition, nil
 }
