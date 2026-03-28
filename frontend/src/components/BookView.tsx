@@ -23,12 +23,7 @@ export function BookView({ events, composition }: BookViewProps) {
         selectedEvent={selectedEvent}
         baseStyle={base}
       />
-      <GlobeSection
-        containerRef={containerRef}
-        filter={filter}
-        eventCount={events.length}
-        hasFilter={Boolean(filter)}
-      />
+      <GlobeSection containerRef={containerRef} filter={filter} eventCount={events.length} />
     </>
   );
 }
