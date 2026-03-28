@@ -7,15 +7,15 @@ The MVP centers on a 3D globe frontend and a lightweight API that serves book ev
 # Repo Layout
 
 - `frontend/`: Next.js app (UI + globe, TypeScript)
-- `api/`: Node API service (REST endpoints, TypeScript)
+- `backend/`: Go API service (REST endpoints)
 - `planning/`: epics, tickets, and design notes
 
 # Running Locally
 
 - Node.js 24 is the expected runtime for this repo. If you are not on node 24 (i.e. check `node --version`), then run `nvm use` to switch to the correct version
 - Frontend: `cd frontend && npm install && npm run dev` (defaults to port 3000)
-- API: `cd api && npm install && npm run dev` (defaults to port 4000, `/health` endpoint)
-- API + DB testing:
+- Backend API: `cd backend && go run ./cmd/server` (defaults to port 4000, `/health` endpoint)
+- Backend + DB testing:
     - You may need escalated permissions to `curl` `http://localhost:4000/*` from the sandbox.
     - To rebuild the database after changing `infrastructure/prod/initdb/*.sql`, bring volumes down and back up (for example: `cd infrastructure/prod && docker compose down -v && docker compose up`).
 - After large changes, run `pre-commit run --all-files` to catch formatting and lint issues.

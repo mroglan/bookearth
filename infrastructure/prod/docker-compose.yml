@@ -3,7 +3,7 @@ services:
     image: caddy:2.8-alpine
     depends_on:
       - frontend
-      - api
+      - backend
     ports:
       - "80:80"
     volumes:
@@ -20,14 +20,14 @@ services:
     expose:
       - "3000"
 
-  api:
+  backend:
     build:
-      context: ../../api
+      context: ../../backend
       dockerfile: Dockerfile
     depends_on:
       - db
     environment:
-      NODE_ENV: production
+      BACKEND_ENV: production
       PORT: "4000"
       DATA_DIR: /data
     expose:

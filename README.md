@@ -5,7 +5,7 @@ Book Earth is a literary map explorer. The MVP focuses on a 3D globe, an API tha
 ## Repo Layout
 
 - `frontend/`: Next.js app (UI + globe, TypeScript)
-- `api/`: Node API service (REST endpoints, TypeScript)
+- `backend/`: Go API service (REST endpoints)
 - `planning/`: epics, tickets, and design notes
 
 ## Local Development
@@ -22,19 +22,18 @@ npm run dev
 
 Runs at `http://localhost:3000`.
 
-### API
+### Backend API
 
 ```bash
-cd api
-npm install
-npm run dev
+cd backend
+go run ./cmd/server
 ```
 
 Runs at `http://localhost:4000`. Health check at `http://localhost:4000/health`.
 
 ## Docker Builds
 
-Dockerfiles live in `frontend/` and `api/`.
+Dockerfiles live in `frontend/` and `backend/`.
 
 ### Frontend
 
@@ -46,14 +45,14 @@ docker build -f frontend/Dockerfile -t bookearth-frontend ./frontend
 docker run --rm -p 3000:3000 bookearth-frontend
 ```
 
-### API
+### Backend API
 
 ```bash
-docker build -f api/Dockerfile -t bookearth-api ./api
+docker build -f backend/Dockerfile -t bookearth-backend ./backend
 ```
 
 ```bash
-docker run --rm -p 4000:4000 bookearth-api
+docker run --rm -p 4000:4000 bookearth-backend
 ```
 
 ## Docker Compose (Full Stack)
