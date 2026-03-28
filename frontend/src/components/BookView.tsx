@@ -1,6 +1,7 @@
 "use client";
 
 import { useCesiumGlobe } from "../hooks/useCesiumGlobe";
+import { getCompositionStyle } from "../utils/cesium";
 import type { BookEvent, MapComposition } from "../utils/types";
 import { GlobeSection } from "./GlobeSection";
 import { Sidebar } from "./Sidebar";
@@ -11,11 +12,8 @@ type BookViewProps = {
 };
 
 export function BookView({ events, composition }: BookViewProps) {
-  const { containerRef, selectedEvent, baseStyle, filter, status, error } = useCesiumGlobe(
-    events,
-    composition,
-  );
-  // TODO: are baseStyle and filter necessary since they're just coming from composition?
+  const { containerRef, selectedEvent, status, error } = useCesiumGlobe(events, composition);
+  const { base, filter } = getCompositionStyle(composition);
 
   return (
     <>
@@ -23,7 +21,7 @@ export function BookView({ events, composition }: BookViewProps) {
         composition={composition}
         eventCount={events.length}
         selectedEvent={selectedEvent}
-        baseStyle={baseStyle}
+        baseStyle={base}
         status={status}
         error={error}
       />

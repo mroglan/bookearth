@@ -15,8 +15,6 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
   const cesiumRef = useRef<CesiumModule | null>(null);
 
   const [selectedEvent, setSelectedEvent] = useState<BookEvent | null>(null);
-  const [baseStyle, setBaseStyle] = useState("terrain");
-  const [filter, setFilter] = useState("");
   const [status, setStatus] = useState("Loading...");
   const [error, setError] = useState<string | null>(null);
 
@@ -62,9 +60,7 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
     const Cesium = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!Cesium || !viewer || !composition) return;
-    const applied = applyMapComposition(Cesium, viewer, composition);
-    setBaseStyle(applied.base);
-    setFilter(applied.filter);
+    applyMapComposition(Cesium, viewer, composition);
   }, [composition]);
 
   // Initialize Cesium viewer once
@@ -117,9 +113,7 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
 
       if (composition) {
         try {
-          const applied = applyMapComposition(Cesium, viewer, composition);
-          setBaseStyle(applied.base);
-          setFilter(applied.filter);
+          applyMapComposition(Cesium, viewer, composition);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Unknown error");
         }
@@ -142,5 +136,5 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { containerRef, selectedEvent, baseStyle, filter, status, error };
+  return { containerRef, selectedEvent, status, error };
 }
