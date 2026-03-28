@@ -1,13 +1,10 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/mroglan/bookearth/backend/internal/config"
 	"github.com/mroglan/bookearth/backend/internal/model"
 	"github.com/mroglan/bookearth/backend/internal/repository"
 )
@@ -26,14 +23,8 @@ func NewAPI(conn repository.Connection) *API {
 	}
 }
 
-func (a *API) Server() *http.Server {
+func (a *API) Handler() http.Handler {
 	r := chi.NewRouter()
 	r.Use(CORS)
-	handler := a.registerRoutes(r)
-	cfg := config.LoadConfig()
-	return &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.Port),
-		Handler:           handler,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
+	return a.registerRoutes(r)
 }

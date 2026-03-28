@@ -5,17 +5,40 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
-
-	"github.com/go-chi/chi/v5"
 
 	"github.com/mroglan/bookearth/backend/internal/db"
 )
 
-func TestHealthEndpoint(t *testing.T) {
-	client, baseURL := newTestServer(t)
+var (
+	testClient *http.Client
+	baseURL    string
+)
 
-	resp, err := client.Get(baseURL + "/health")
+func TestMain(m *testing.M) {
+	ctx := context.Background()
+	pool, err := db.CreatePostgresConnection(ctx)
+	if err != nil {
+		panic(err)
+	}
+	defer pool.Close()
+
+	api := NewAPI(pool)
+	handler := api.Handler()
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	testClient = srv.Client()
+	baseURL = srv.URL
+
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
+
+func TestHealthEndpoint(t *testing.T) {
+	resp, err := testClient.Get(baseURL + "/health")
 	if err != nil {
 		t.Fatalf("health request failed: %v", err)
 	}
@@ -33,9 +56,7 @@ func TestHealthEndpoint(t *testing.T) {
 }
 
 func TestBookEventsEndpoint(t *testing.T) {
-	client, baseURL := newTestServer(t)
-
-	resp, err := client.Get(baseURL + "/books/1/events")
+	resp, err := testClient.Get(baseURL + "/books/1/events")
 	if err != nil {
 		t.Fatalf("events request failed: %v", err)
 	}
@@ -53,9 +74,7 @@ func TestBookEventsEndpoint(t *testing.T) {
 }
 
 func TestBookMapCompositionEndpoint(t *testing.T) {
-	client, baseURL := newTestServer(t)
-
-	resp, err := client.Get(baseURL + "/books/1/map-composition")
+	resp, err := testClient.Get(baseURL + "/books/1/map-composition")
 	if err != nil {
 		t.Fatalf("map composition request failed: %v", err)
 	}
@@ -70,24 +89,4 @@ func TestBookMapCompositionEndpoint(t *testing.T) {
 	if _, ok := composition["base"]; !ok {
 		t.Fatalf("expected map composition to include base")
 	}
-}
-
-func newTestServer(t *testing.T) (*http.Client, string) {
-	t.Helper()
-	ctx := context.Background()
-	pool, err := db.CreatePostgresConnection(ctx)
-	if err != nil {
-		t.Fatalf("failed to create db pool: %v", err)
-	}
-	t.Cleanup(pool.Close)
-
-	api := NewAPI(pool)
-	r := chi.NewRouter()
-	r.Use(CORS)
-	handler := api.registerRoutes(r)
-
-	srv := httptest.NewServer(handler)
-	t.Cleanup(srv.Close)
-
-	return srv.Client(), srv.URL
 }

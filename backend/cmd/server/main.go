@@ -31,7 +31,13 @@ func main() {
 	}
 
 	app := api.NewAPI(pool)
-	server := app.Server()
+	handler := app.Handler()
+	cfg := config.LoadConfig()
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+	}
 
 	shutdownCh := make(chan os.Signal, 1)
 	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)
@@ -43,7 +49,6 @@ func main() {
 		_ = server.Shutdown(ctx)
 	}()
 
-	cfg := config.LoadConfig()
 	fmt.Printf("Book Earth API listening on http://localhost:%d\n", cfg.Port)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", err)
