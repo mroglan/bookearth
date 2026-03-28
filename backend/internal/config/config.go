@@ -114,10 +114,10 @@ func defaultsForEnv(env string) envDefaults {
 			DB: dbDefaults{
 				ConnectionString: "",
 				Host:             "localhost",
-				Port:             5432,
+				Port:             5433,
 				User:             "bookearth",
 				Password:         "bookearth",
-				Database:         "bookearth",
+				Database:         "bookearth_test",
 			},
 		}
 	default:

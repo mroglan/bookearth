@@ -18,5 +18,5 @@ for attempt in {1..10}; do
   sleep 0.5
 done
 
-cd "$(dirname "${BASH_SOURCE[0]}")/api"
-DB_PORT=5433 DB_NAME=bookearth_test npm test
+cd "$(dirname "${BASH_SOURCE[0]}")/backend"
+BACKEND_ENV=test go test -v ./...
