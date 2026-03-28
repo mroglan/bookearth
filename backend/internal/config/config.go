@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type DBConfig struct {
@@ -28,12 +29,13 @@ type Config struct {
 	DB      DBConfig
 }
 
+var once sync.Once
 var globalConfig *Config
 
 func LoadConfig() *Config {
-	if globalConfig == nil {
+	once.Do(func() {
 		globalConfig = load()
-	}
+	})
 	return globalConfig
 }
 

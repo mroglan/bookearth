@@ -1,8 +1,9 @@
-package middleware
+package api
 
 import (
-	"bookearth/backend/internal/config"
 	"net/http"
+
+	"github.com/mroglan/bookearth/backend/internal/config"
 )
 
 func CORS(next http.Handler) http.Handler {
