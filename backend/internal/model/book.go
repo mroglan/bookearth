@@ -24,5 +24,5 @@ type Book struct {
 }
 
 type BookRepository interface {
-	GetMapCompositionById(context.Context, string) (MapComposition, bool, error)
+	GetMapCompositionById(context.Context, string) (MapComposition, error)
 }
