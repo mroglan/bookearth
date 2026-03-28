@@ -14,7 +14,7 @@ func NewPostgresEventRepository(conn Connection) *PostgresEventRepository {
 	return &PostgresEventRepository{conn: conn}
 }
 
-func (r *PostgresEventRepository) FetchByBook(ctx context.Context, bookID string) ([]model.Event, error) {
+func (r *PostgresEventRepository) GetByBookId(ctx context.Context, bookID string) ([]model.Event, error) {
 	rows, err := r.conn.Query(
 		ctx,
 		`SELECT id, book_id, parent_event_id, title, description, lat, lon, importance, narrative_index

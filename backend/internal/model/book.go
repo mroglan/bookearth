@@ -10,5 +10,5 @@ type Book struct {
 }
 
 type BookRepository interface {
-	FetchMapCompositionByBook(ctx context.Context, bookID string) (MapComposition, bool, error)
+	GetMapCompositionById(context.Context, string) (MapComposition, bool, error)
 }

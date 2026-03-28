@@ -36,7 +36,7 @@ func (a *API) handleBookEvents(w http.ResponseWriter, r *http.Request, bookID st
 		return
 	}
 
-	events, err := a.eventsRepo.FetchByBook(r.Context(), bookID)
+	events, err := a.eventsRepo.GetByBookId(r.Context(), bookID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return
@@ -51,7 +51,7 @@ func (a *API) handleBookMapComposition(w http.ResponseWriter, r *http.Request, b
 		return
 	}
 
-	composition, found, err := a.booksRepo.FetchMapCompositionByBook(r.Context(), bookID)
+	composition, found, err := a.booksRepo.GetMapCompositionById(r.Context(), bookID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal server error")
 		return

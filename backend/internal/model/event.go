@@ -15,5 +15,5 @@ type Event struct {
 }
 
 type EventRepository interface {
-	FetchByBook(ctx context.Context, bookID string) ([]Event, error)
+	GetByBookId(ctx context.Context, bookID string) ([]Event, error)
 }

@@ -17,7 +17,7 @@ func NewPostgresBookRepository(conn Connection) *PostgresBookRepository {
 	return &PostgresBookRepository{conn: conn}
 }
 
-func (r *PostgresBookRepository) FetchMapCompositionByBook(
+func (r *PostgresBookRepository) GetMapCompositionById(
 	ctx context.Context,
 	bookID string,
 ) (model.MapComposition, bool, error) {
