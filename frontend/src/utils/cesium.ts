@@ -35,9 +35,10 @@ export function applyMapComposition(
   } else if (base === "minimal") {
     viewer.scene.globe.baseColor = Cesium.Color.fromCssColorString("#f1ede6");
   } else {
+    // "terrrain"
     viewer.imageryLayers.addImageryProvider(
-      new Cesium.OpenStreetMapImageryProvider({
-        url: "https://tile.openstreetmap.org/",
+      new Cesium.UrlTemplateImageryProvider({
+        url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}",
       }),
     );
   }
