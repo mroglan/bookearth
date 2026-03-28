@@ -10,6 +10,7 @@ backend
         - main.go (NewAPI function that returns api struct, api.Server function which links routes together)
         - handlers.go (call the repoistory implementations to perform actions)
         - routes.go (set up with chiMux, each route endpoint points to a handler)
+        - middleware.go (just cors for now)
     - model (package)
         - book.go (struct for the book data structure, as well as a BookRepository type that will be implemented by repository)
         - event.go (struct for the event data structure, as well as an EventRepository type that will be implemented by repository)
@@ -23,9 +24,11 @@ backend
             }
         ```
         - postgres_book.go (implements BookRepository; conn included in struct with type Connection)
-        - postres_event.go (implements EventRepository; conn included in struct with type Connection)
+        - postgres_event.go (implements EventRepository; conn included in struct with type Connection)
     - db (package)
         - postgres.go (has CreatePostgresConnection that returns pgxpool.Pool, which happens to implement the Connection type I defined in connection.go)
+    - config (package)
+        - config.go (leave this as is, continue using it throughout the code like today)
 
 
 # Misc thing
