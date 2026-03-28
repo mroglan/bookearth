@@ -1,18 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Cartesian2, CustomDataSource, Entity, ScreenSpaceEventHandler, Viewer } from "cesium";
 import { applyMapComposition } from "../utils/cesium";
 import type { BookEvent, MapComposition } from "../utils/types";
 
 type CesiumModule = typeof import("cesium");
-type CesiumEntityWithEvent = import("cesium").Entity & { eventData: BookEvent };
+type CesiumEntityWithEvent = Entity & { eventData: BookEvent };
 
 const CESIUM_BASE_URL = "/cesium/";
 
 export function useCesiumGlobe(events: BookEvent[], composition: MapComposition | null) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const viewerRef = useRef<import("cesium").Viewer | null>(null);
-  const dataSourceRef = useRef<import("cesium").CustomDataSource | null>(null);
+  const viewerRef = useRef<Viewer | null>(null);
+  const dataSourceRef = useRef<CustomDataSource | null>(null);
   const cesiumRef = useRef<CesiumModule | null>(null);
 
   const [selectedEvent, setSelectedEvent] = useState<BookEvent | null>(null);
@@ -65,7 +66,7 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
 
-    let handler: import("cesium").ScreenSpaceEventHandler | null = null;
+    let handler: ScreenSpaceEventHandler | null = null;
 
     const initialize = async () => {
       const Cesium = await import("cesium");
@@ -100,7 +101,7 @@ export function useCesiumGlobe(events: BookEvent[], composition: MapComposition 
       dataSourceRef.current = dataSource;
 
       handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      handler.setInputAction((movement: { position: import("cesium").Cartesian2 }) => {
+      handler.setInputAction((movement: { position: Cartesian2 }) => {
         const picked = viewer.scene.pick(movement.position) as { id?: unknown } | undefined;
         const entity = picked?.id as CesiumEntityWithEvent | undefined;
         setSelectedEvent(entity?.eventData ?? null);

@@ -1,3 +1,4 @@
+import type { Viewer } from "cesium";
 import type { MapComposition } from "./types";
 
 type CesiumModule = typeof import("cesium");
@@ -19,7 +20,7 @@ export function getCompositionStyle(composition: MapComposition | null): {
 
 export function applyMapComposition(
   Cesium: CesiumModule,
-  viewer: import("cesium").Viewer,
+  viewer: Viewer,
   composition: MapComposition | null,
 ): void {
   const { base } = getCompositionStyle(composition);
