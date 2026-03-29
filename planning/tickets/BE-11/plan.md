@@ -44,30 +44,59 @@ Each model has a distinct concern and a distinct feedback path.
 
 ---
 
-### Model 2: Importance Scoring
+### Model 2: Importance Scoring (Fine-tuned Transformer)
 
 **Purpose:** Given the raw events from Model 1 and the full book text, assign importance (0-1) to each event. This determines what shows on the map and how prominently.
 
-**Input:**
-- Complete list of raw events from Model 1
-- The full book text (for broader context)
+**Input per event:**
+- The event's surrounding text passage (a few sentences of context from the book)
+- The event title and physical location
+- Book-level metadata (total event count, position in narrative)
 
-**Output:** Each event gains an `importance` score (0-1):
-- 1 = pivotal plot moment (Fogg's departure, the wager, the return)
+**Output:** An `importance` score (0-1, continuous):
+- 1.0 = pivotal plot moment (Fogg's departure, the wager, the return)
 - 0.5 = significant stop or scene
-- 0 = briefly mentioned location
+- 0.0 = briefly mentioned location
 
-**Initial approach:** Feature-based scoring using:
+**Model:** Fine-tuned DistilBERT (or similar small transformer) for regression/classification on importance.
+
+- **Base model:** `distilbert-base-uncased` (~66M params) — small enough for fast inference on CPU, trainable on a modest cloud GPU in minutes
+- **Task framing:** Regression — input is the event passage, output is a continuous importance score (0-1).
+- **Training framework:** Hugging Face `transformers` + `datasets` libraries
+
+**Bootstrap (first run, no training data yet):**
+
+Since we can't fine-tune without labeled data, the first run uses a heuristic to assign initial importance:
 - Mention frequency (how often this location appears in the text)
 - Text coverage (how many words/paragraphs are set at this location)
-- Narrative position (events at the start/end of the book tend to matter more)
+- Narrative position (events at start/end of book tend to matter more)
 - Context signals (nearby words like "arrived", "departed", "discovered" vs. passing references)
 
-These features feed a simple scoring function that can be tuned. Over time, this is the model that gets **retrained from human feedback** — when a user adjusts an event's importance in the UI, that correction becomes a training signal.
+This heuristic produces the first draft. The human reviews and corrects importance scores, generating the first batch of labeled training data.
 
-**Future retraining path:**
-- Store `(event_features, human_assigned_importance)` pairs
-- Retrain the scoring model (could graduate from heuristic → logistic regression → neural, as data accumulates)
+**Retraining cycle:**
+1. Human corrects importance scores → stored as `(passage_text, corrected_importance)` pairs
+2. Fine-tune DistilBERT on the labeled data (cloud GPU — a few minutes per training run)
+3. Re-run Model 2 with the fine-tuned model → better scores
+4. Repeat as more feedback accumulates across books
+
+**Training data format:**
+```json
+[
+  {
+    "text": "Phileas Fogg wagers twenty thousand pounds that he can circumnavigate the globe in eighty days, departing from the Reform Club.",
+    "label": 1.0
+  },
+  {
+    "text": "The train passed through the outskirts of Benares.",
+    "label": 0.1
+  }
+]
+```
+
+**Cloud training:** A small DistilBERT fine-tune on ~50-200 examples runs in under 5 minutes on a single cloud GPU (e.g., a T4 on Google Colab, Lambda, or similar). No heavy infrastructure needed.
+
+**Dependencies:** `transformers`, `datasets`, `torch`
 
 ---
 
@@ -123,10 +152,10 @@ These features feed a simple scoring function that can be tuned. Over time, this
 ### How feedback flows back:
 
 **Importance corrections → Model 2:**
-- Human changes an event's importance from 0.5 to 1 (or removes a low-quality event)
-- This `(features, corrected_importance)` pair is stored as training data
-- Model 2's scoring function is re-tuned to match human judgment
-- Initially this is manual prompt/weight tuning; later it can be automated retraining
+- Human changes an event's importance (e.g., 0.3 → 0.9, or removes a low-quality event)
+- The `(passage_text, corrected_importance)` pair is stored as training data
+- Fine-tune DistilBERT on the accumulated labeled data (cloud GPU)
+- Re-run Model 2 with the fine-tuned model → better importance scores
 
 **Location corrections → Model 3:**
 - Human drags a pin to a new location
@@ -169,12 +198,18 @@ scripts/
     main.py            # CLI: python main.py <book.txt> -o events.json
     chunker.py         # Split book text into processable sections
     extractor.py       # Model 1: spaCy NER + context extraction
-    scorer.py          # Model 2: importance scoring
+    scorer.py          # Model 2: heuristic bootstrap + fine-tuned DistilBERT inference
+    train_scorer.py    # Model 2 training: fine-tune DistilBERT on human feedback data
     geocoder.py        # Model 3: Nominatim + overrides
     formatter.py       # Convert to event JSON / SQL insert
-    requirements.txt   # spacy, geopy
+    requirements.txt   # spacy, geopy, transformers, datasets, torch
   overrides/
-    around-the-world-in-eighty-days.json  # Location overrides for this book
+    around-the-world-in-eighty-days.json       # Location overrides
+    around-the-world-in-eighty-days-events.json # Event overrides (additions/removals)
+  training_data/
+    importance_labels.json  # Human-corrected importance scores (accumulates over time)
+  models/
+    scorer/                 # Fine-tuned DistilBERT checkpoint (after first training run)
 ```
 
 ## Output Format
@@ -189,7 +224,7 @@ JSON matching the events table schema:
     "text_position": 1847,
     "lat": 51.5069,
     "lon": -0.1378,
-    "importance": 1,
+    "importance": 0.95,
     "narrative_index": 1
   }
 ]
@@ -204,17 +239,18 @@ JSON matching the events table schema:
    - Are importance scores producing good visual density?
    - Are pins in the right places?
 4. **Feedback adjusts the system:**
-   - Importance: tune Model 2's scoring weights/thresholds
-   - Locations: add entries to the overrides JSON
-   - Extraction: adjust NER filtering/deduplication parameters
+   - Importance: correct scores → save to `training_data/importance_labels.json` → fine-tune DistilBERT → re-run Model 2
+   - Locations: add entries to the location overrides JSON
+   - Extraction: add entries to the event overrides JSON (additions/removals) + adjust NER parameters
 5. **Re-run and repeat** until output quality is satisfactory
 
 The prompt and parameters that emerge from this tuning become the baseline for future books.
 
 ## Dependencies
 
-- `spacy` + `en_core_web_sm` — NER for event extraction
-- `geopy` — Nominatim geocoding
+- `spacy` + `en_core_web_sm` — NER for event extraction (Model 1)
+- `transformers` + `datasets` + `torch` — DistilBERT fine-tuning and inference (Model 2)
+- `geopy` — Nominatim geocoding (Model 3)
 
 ## Verification
 
