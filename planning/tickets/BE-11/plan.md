@@ -109,9 +109,9 @@ These features feed a simple scoring function that can be tuned. Over time, this
 [Run pipeline] → [View on map] → [Human edits] → [Feedback feeds back]
                                         |
                         ┌───────────────┼───────────────┐
-                        ▼                               ▼
-               Model 2 retraining              Model 3 overrides
-            (importance corrections)        (location corrections)
+                        ▼               ▼               ▼
+              Model 1 overrides  Model 2 retraining  Model 3 overrides
+            (event corrections) (importance corrections) (location corrections)
 ```
 
 ### What the human reviews:
@@ -134,9 +134,30 @@ These features feed a simple scoring function that can be tuned. Over time, this
 - On re-run, the override takes precedence over Nominatim
 - Overrides accumulate across runs and books, building a curated location database
 
-**Event additions/removals → Model 1 (future):**
-- If the human consistently adds events Model 1 missed, or removes false positives, this data could eventually retrain the extraction model
-- For now, this is out of scope — Model 1 (NER) is deterministic and harder to retrain without fine-tuning
+**Event additions/removals → Model 1:**
+- Human adds an event Model 1 missed → stored as a forced inclusion in a per-book overrides file
+- Human removes a false positive → stored as a forced exclusion
+- On re-run, the overrides inject/suppress events before Model 2 and 3 run
+
+**Override file format** (`overrides/<book-slug>-events.json`):
+```json
+{
+  "additions": [
+    {
+      "title": "Rescue of Aouda",
+      "description": "Fogg and Passepartout rescue Aouda from a suttee ceremony.",
+      "physical_location": "Pillaji",
+      "text_position": 23456
+    }
+  ],
+  "removals": [
+    { "physical_location": "England", "reason": "too generic, not a distinct event" }
+  ]
+}
+```
+- Additions are merged into Model 1 output before passing to Model 2
+- Removals filter out events matching by `physical_location` (or title)
+- Over time, patterns in additions/removals could inform NER tuning (e.g., adjusting entity type filters or deduplication thresholds)
 
 ---
 
